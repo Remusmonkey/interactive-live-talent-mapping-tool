@@ -17,8 +17,44 @@ Each person does this on their own machine.
 ### Local tools
 
 - [ ] **Git** — confirm with `git --version` (install from <https://git-scm.com> if missing)
-- [ ] **GitHub CLI (`gh`)** — confirm with `gh --version` (install with `brew install gh` on macOS, or see <https://cli.github.com>)
+- [ ] **GitHub CLI (`gh`)** — confirm with `gh --version`. Install with `brew install gh` on macOS (or see "Don't have brew?" below)
 - [ ] **Cursor** — download from <https://cursor.com>
+
+#### Don't have brew?
+
+Two paths — pick one.
+
+**Option 1 — Install Homebrew first (recommended for this project)**
+
+The project uses Python + Streamlit + Pandas + Plotly, all of which install most cleanly via brew. If you're going to do any other dev work this hackathon, you want brew. One command:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/main/install.sh)"
+```
+
+What to expect:
+
+1. Press Return when prompted.
+2. Enter your Mac login password (typed characters won't show — that's normal).
+3. If Xcode Command Line Tools aren't installed, a separate Apple installer pops up — accept it. This is the slowest step (5-10 minutes).
+4. At the end, brew prints two `echo >> ~/.zprofile` commands and an `eval "$(...)"` line. **Run those exact lines** — they add brew to your shell PATH. Without them, `brew` won't be found in new terminals.
+5. Open a fresh terminal and run `brew --version` to confirm.
+
+Total: ~15 minutes, mostly waiting on Xcode CLI Tools. Then `brew install gh` and continue with the auth section below.
+
+**Option 2 — Skip brew, install `gh` directly**
+
+If brew feels like overkill, download the macOS installer from the GitHub CLI releases page:
+
+1. Visit <https://github.com/cli/cli/releases/latest>
+2. Under "Assets," download:
+   - **Apple Silicon (M1/M2/M3/M4):** `gh_*_macOS_arm64.pkg`
+   - **Intel Mac:** `gh_*_macOS_amd64.pkg`
+   - Not sure which? Apple menu → About This Mac → "Chip" line. "Apple M*" = arm64, "Intel" = amd64.
+3. Double-click the `.pkg` file, click through the installer.
+4. Open a fresh terminal, run `gh --version` to confirm.
+
+Done in ~2 minutes.
 
 ### Configure Git locally
 
