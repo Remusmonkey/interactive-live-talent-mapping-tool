@@ -1,0 +1,4 @@
+function,level,location,total_cash_median,total_cash_p25,total_cash_p75,equity_grant_median,source_type,source_url,as_of_date,notes
+Engineering,VP,United States,placeholder,placeholder,placeholder,placeholder,public_posting,https://example.com/placeholder,2026-04-30,placeholder row - source_type must be one of: public_posting | levels_fyi | news_article | manual_research
+Product,VP,United States,placeholder,placeholder,placeholder,placeholder,levels_fyi,https://example.com/placeholder,2026-04-30,placeholder row
+Finance,Senior Director,United States,placeholder,placeholder,placeholder,placeholder,news_article,https://example.com/placeholder,2026-04-30,placeholder row

@@ -1,0 +1,14 @@
+# Interactive Live Talent Mapping Tool — Python dependencies
+#
+# These are minimum versions known to work together. After your first successful
+# install, run `pip freeze > requirements-lock.txt` to capture exact versions
+# for reproducible builds across the team.
+
+streamlit>=1.30
+pandas>=2.0
+plotly>=5.18
+notion-client>=2.2
+python-dotenv>=1.0
+
+# Dev / test
+pytest>=8.0
