@@ -17,8 +17,44 @@ Each person does this on their own machine.
 ### Local tools
 
 - [ ] **Git** — confirm with `git --version` (install from <https://git-scm.com> if missing)
-- [ ] **Node.js** (LTS) — confirm with `node --version` and `npm --version`
-- [ ] **Editor** — Cursor, VS Code, or your preferred editor
+- [ ] **GitHub CLI (`gh`)** — confirm with `gh --version`. Install with `brew install gh` on macOS (or see "Don't have brew?" below)
+- [ ] **Cursor** — download from <https://cursor.com>
+
+#### Don't have brew?
+
+Two paths — pick one.
+
+**Option 1 — Install Homebrew first (recommended for this project)**
+
+The project uses Python + Streamlit + Pandas + Plotly, all of which install most cleanly via brew. If you're going to do any other dev work this hackathon, you want brew. One command:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/main/install.sh)"
+```
+
+What to expect:
+
+1. Press Return when prompted.
+2. Enter your Mac login password (typed characters won't show — that's normal).
+3. If Xcode Command Line Tools aren't installed, a separate Apple installer pops up — accept it. This is the slowest step (5-10 minutes).
+4. At the end, brew prints two `echo >> ~/.zprofile` commands and an `eval "$(...)"` line. **Run those exact lines** — they add brew to your shell PATH. Without them, `brew` won't be found in new terminals.
+5. Open a fresh terminal and run `brew --version` to confirm.
+
+Total: ~15 minutes, mostly waiting on Xcode CLI Tools. Then `brew install gh` and continue with the auth section below.
+
+**Option 2 — Skip brew, install `gh` directly**
+
+If brew feels like overkill, download the macOS installer from the GitHub CLI releases page:
+
+1. Visit <https://github.com/cli/cli/releases/latest>
+2. Under "Assets," download:
+   - **Apple Silicon (M1/M2/M3/M4):** `gh_*_macOS_arm64.pkg`
+   - **Intel Mac:** `gh_*_macOS_amd64.pkg`
+   - Not sure which? Apple menu → About This Mac → "Chip" line. "Apple M*" = arm64, "Intel" = amd64.
+3. Double-click the `.pkg` file, click through the installer.
+4. Open a fresh terminal, run `gh --version` to confirm.
+
+Done in ~2 minutes.
 
 ### Configure Git locally
 
@@ -29,22 +65,38 @@ git config --global user.name "Your Name"
 git config --global user.email "your.email@company.com"
 ```
 
-### Set up GitHub authentication (pick one)
+### Set up GitHub authentication (recommended: `gh`)
 
-**Option A — HTTPS + Personal Access Token (simpler)**
+The reliable way on macOS is the GitHub CLI. It handles auth via your browser and configures git's credential helper so every push/pull works without prompting — including from inside Cursor's agent.
+
+```bash
+gh auth login
+# Pick: GitHub.com → HTTPS → Login with a web browser → paste the one-time code
+gh auth setup-git
+gh auth status   # should say "Logged in to github.com"
+```
+
+After this, `git clone`, `git push`, and `git pull` all work seamlessly from any terminal — including the Cursor agent's non-interactive shell.
+
+> **Why not just sign into GitHub from Cursor's settings?**
+> Cursor's GitHub integration powers IDE features (PR review, source control panel) but does NOT consistently configure git's command-line credential helper. The Cursor agent runs `git push` non-interactively and fails with "Device not configured" when no credential helper is set up. `gh auth setup-git` is the one-shot fix.
+
+#### Fallback paths (only if you can't install `gh`)
+
+**HTTPS + Personal Access Token**
 
 1. GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Generate new token with `repo` scope
-3. Save it somewhere safe — you'll paste it as your password the first time you push
+2. Generate new token with `repo` scope, copy it
+3. Run `git push -u origin <branch>` **in your own Terminal app** (not Cursor's agent). Enter your GitHub username, paste the token as the password. macOS Keychain caches it — subsequent pushes (including from Cursor) will work.
 
-**Option B — SSH key (one-time setup, no token to manage)**
+**SSH key**
 
 ```bash
 ssh-keygen -t ed25519 -C "your.email@company.com"
 cat ~/.ssh/id_ed25519.pub
 ```
 
-Then add the public key to GitHub → Settings → SSH and GPG keys.
+Add the public key to GitHub → Settings → SSH and GPG keys, then clone using the `git@github.com:...` URL instead of HTTPS.
 
 ---
 
@@ -64,9 +116,51 @@ The repo owner needs to invite each teammate:
 
 ## Phase 3: First Sync (everyone, ~5 min)
 
-Once you've been invited:
+Once you've been invited and accepted the GitHub invite from your email, pick **one** of the two paths below.
 
-- [ ] Accept the GitHub invite from your email
+### Option A — Cursor Quickstart (recommended)
+
+Open Cursor (with no folder, or any folder), open the chat, switch to **Agent mode**, and paste the prompt below. The agent will verify your auth, clone the repo, run the smoke test, and confirm you can push — all in one go.
+
+> **Prerequisite:** you must have completed `gh auth login` + `gh auth setup-git` in Phase 1. The first step of the prompt checks for this and stops if you haven't.
+
+```text
+Help me set up the Interactive Live Talent Mapping Tool repo for the hackathon.
+
+1. First, run `gh auth status` to confirm I'm authenticated with GitHub.
+   - If it errors or says "not logged in," STOP and tell me to run:
+     `gh auth login && gh auth setup-git`
+     Then come back and re-run this prompt.
+
+2. Ask me where to clone the repo (suggest ~/Desktop or ~/dev). Run:
+   git clone https://github.com/Remusmonkey/interactive-live-talent-mapping-tool.git
+   in that location.
+
+3. cd into the cloned folder. Read README.md and SETUP.md for context.
+
+4. Confirm I'm on `main` and run `git pull` so I'm at the latest.
+
+5. Ask me my first name (lowercased, no spaces) — we'll use it for a test branch.
+
+6. Then:
+   - Create branch `test/<my-name>`
+   - Append "<my name> setup complete" to SETUP_TEST.md
+   - Commit with message `test: confirm <my name> setup`
+   - Push with `git push -u origin test/<my-name>`
+
+7. If the push succeeds:
+   - Tell me to post "I can push" in the team chat.
+   - Tell me to open the cloned folder in Cursor (File → Open Folder) so future
+     work happens inside the repo.
+   - Tell me to stay on `main` until the team huddle locks framework + language.
+
+8. If anything fails, stop and explain the error — don't try to work around it.
+```
+
+### Option B — Manual checklist
+
+If you prefer the command line:
+
 - [ ] Clone the repo:
 
   ```bash
@@ -168,7 +262,8 @@ Then open a PR on GitHub → tag a teammate → merge into `main`. Repeat.
 
 | Problem | Fix |
 |---|---|
-| `permission denied` on push | Confirm you're a collaborator and your auth (PAT or SSH) is configured |
+| `fatal: could not read Username for 'https://github.com': Device not configured` | No git credential helper is set up. Run `gh auth login && gh auth setup-git` (Phase 1), then retry the push. The Cursor agent can't respond to interactive prompts, so this fix is required before any push will work from the agent. |
+| `permission denied` on push | Confirm you're a collaborator on the repo, and that `gh auth status` shows you're logged in. If using PAT/SSH instead, see Phase 1 fallback paths. |
 | Merge conflict | Pull `main`, resolve in your editor, commit, push |
 | Accidentally committed to `main` directly | `git reset --soft HEAD~1`, then move changes to a branch |
 | Need to undo a commit you already pushed | Use `git revert <commit>` — safer than `git reset` once shared |
