@@ -95,7 +95,7 @@ Lock these decisions before anyone starts coding. Each one will save real hours 
 
 ### Stack
 
-- [ ] **Framework** — Vite + React, Next.js, or other? (Netlify-friendly recommended)
+- [ ] **Framework** — Vite + React, Next.js, or other?
 - [ ] **Language** — TypeScript or JavaScript?
 - [ ] **Styling** — Tailwind, CSS modules, or styled-components?
 - [ ] **Component library** — shadcn/ui, Mantine, MUI, or roll our own?
@@ -122,11 +122,12 @@ Lock these decisions before anyone starts coding. Each one will save real hours 
 - [ ] Agree on the shape of core objects — `Role`, `Company`, `CompBand`, `Candidate`, etc.
 - [ ] One person checks in a `types.ts` file early so everyone codes against the same shapes
 
-### Deployment
+### Demo plan (running locally)
 
-- [ ] Connect repo to **Netlify** (or Vercel) for auto-deploy from `main`
-- [ ] Enable **deploy previews** so every PR gets its own live URL
-- [ ] Confirm the live URL works for everyone
+- [ ] Designate a **demo machine** — one teammate's laptop that will run the app for the final demo
+- [ ] Confirm everyone can run the app locally (`npm install` → `npm run dev`)
+- [ ] Practice the demo on the actual demo machine before the final presentation
+- [ ] Have a backup plan — at least one other teammate should be able to run the demo if the primary machine fails
 
 ### Communication
 
@@ -180,7 +181,7 @@ Then open a PR on GitHub → tag a teammate → merge into `main`. Repeat.
 1. **Do Phase 1 + 3 before the hackathon starts** — getting setup eats real hackathon time.
 2. **Phase 4 is the most important step to slow down for** — agreeing on the data contract and component ownership for 10 minutes saves you hours of merge pain later.
 3. **Tag a working commit before final tweaks** — `git tag v0.1-demo` lets you roll back instantly if something breaks 10 minutes before presenting.
-4. **Use the Netlify deploy preview URL** for the final demo — more reliable than running locally on someone's laptop.
+4. **Practice the demo on the actual demo machine the night before** — avoids "works on my laptop" surprises and gives you time to fix anything that breaks under pressure.
 
 ---
 
