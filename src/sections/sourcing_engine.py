@@ -1,6 +1,6 @@
 """Section 4 — Role-Based Sourcing Engine (interactive).
 
-Dropdown of 25-30 leadership titles + location text input.
+Dropdown of leadership titles + location text input.
 
 Renders four sub-panels:
   1. Tier 1 companies hiring this role (filtered from Section 1 data).
@@ -8,9 +8,10 @@ Renders four sub-panels:
   3. Comp benchmark cell from Section 3 for this function x level.
   4. LinkedIn Boolean X-Ray search string (see src/xray.py).
 
-The exact 25-30 titles are an open decision — finalize in the PR that builds
-this section. Once finalized, list them in `DROPDOWN_TITLES` below; non-engineer
-teammates can extend the list per the README.
+`DROPDOWN_TITLES` below is seeded from the unique titles found in
+`data/competitor_postings.csv` (18 entries). BUILD_SPEC targets 25-30; expand
+with industry-standard titles to hit that range as the postings dataset grows.
+Non-engineer teammates can extend the list per the README.
 
 Owner: TBD. Implementation lands per BUILD_SPEC.md, Day 4.
 """
@@ -20,8 +21,24 @@ from pathlib import Path
 import streamlit as st
 
 DROPDOWN_TITLES: list[dict[str, str]] = [
-    # {"title": "VP of Engineering", "function": "Engineering", "level": "VP"},
-    # ... finalize during Section 4 build (target: 25-30 entries across the six functions).
+    {"title": "Senior Director of Risk Operations", "function": "Operations", "level": "Senior Director"},
+    {"title": "Vice President of Operations", "function": "Operations", "level": "Vice President"},
+    {"title": "Senior Director of Technical Program Management", "function": "Technical Programs", "level": "Senior Director"},
+    {"title": "Vice President of Technical Program Management", "function": "Technical Programs", "level": "Vice President"},
+    {"title": "Senior Director of Product", "function": "Product", "level": "Senior Director"},
+    {"title": "Senior Director of Product (Payments)", "function": "Product", "level": "Senior Director"},
+    {"title": "Vice President of Product", "function": "Product", "level": "Vice President"},
+    {"title": "Senior Director of Engineering", "function": "Engineering", "level": "Senior Director"},
+    {"title": "Vice President of Engineering", "function": "Engineering", "level": "Vice President"},
+    {"title": "Vice President of Infrastructure", "function": "Engineering", "level": "Vice President"},
+    {"title": "Senior Vice President of Engineering", "function": "Engineering", "level": "Senior Vice President"},
+    {"title": "Senior Director of Partnerships", "function": "Revenue", "level": "Senior Director"},
+    {"title": "Senior Director of Sales", "function": "Revenue", "level": "Senior Director"},
+    {"title": "Vice President of Partnerships", "function": "Revenue", "level": "Vice President"},
+    {"title": "Vice President of Revenue", "function": "Revenue", "level": "Vice President"},
+    {"title": "Senior Vice President of Revenue", "function": "Revenue", "level": "Senior Vice President"},
+    {"title": "Senior Director of Financial Planning & Analysis", "function": "Finance", "level": "Senior Director"},
+    {"title": "Vice President of Finance", "function": "Finance", "level": "Vice President"},
 ]
 
 

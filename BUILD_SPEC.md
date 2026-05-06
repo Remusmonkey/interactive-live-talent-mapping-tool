@@ -48,7 +48,7 @@ Built by sourcers and recruiters (non-engineers). Code should be readable, well-
 ## Locked scope (week 1, non-negotiable)
 
 - **Companies (Tier 1 only):** Stripe, Block, Brex, Ramp, Wise, Adyen, Revolut. No Tier 2 or Tier 3.
-- **Levels:** Senior Director, Vice President (VP), Senior Vice President (SVP). Skip Director and below. Skip C-suite. Skip ICs.
+- **Levels:** Senior Director, Vice President, Senior Vice President. Skip Director and below. Skip C-suite. Skip ICs.
 - **Functions:** Operations, Technical Programs, Product, Engineering, Revenue, Finance. Six total.
 - **Geography:** US-first. London optional in the data model.
 - **X-Ray strings:** LinkedIn only.
@@ -60,7 +60,7 @@ Built by sourcers and recruiters (non-engineers). Code should be readable, well-
 
 What types of senior roles each Tier 1 competitor is currently hiring for.
 
-- For each of the seven companies, render a table of posted SrDir/VP/SVP roles with columns: `title`, `function`, `level`, `location`, `posted_date`.
+- For each of the seven companies, render a table of posted Senior Director, Vice President, and Senior Vice President roles with columns: `title`, `function`, `level`, `location`, `posted_date`.
 - Render an "Industry Signals" panel with 3–5 manually curated insights below the table. Mix Tier 1 hiring trends with broader fintech industry news (e.g., "Block named to TIME's most influential finance companies for 2026", "PayPal spins out Venmo as a standalone unit"). Insights don't have to be drawn solely from the Tier 1 postings dataset — public market signals about non-Tier 1 fintechs are in-scope as long as they're relevant to leadership talent flows.
 - Data source: public job boards, manually curated weekly.
 
@@ -94,7 +94,7 @@ Storage: `data/comp_benchmarks.csv`.
 
 ## Section 4 — Role-Based Sourcing Engine (interactive)
 
-The user picks a title from a dropdown of 25–30 pre-defined leadership titles (across the six functions at SrDir/VP/SVP) and types a location. The tool renders:
+The user picks a title from a dropdown of 25–30 pre-defined leadership titles (across the six functions at Senior Director, Vice President, and Senior Vice President) and types a location. The tool renders:
 
 1. **Tier 1 companies hiring this role:** filtered list from Section 1 data.
 2. **Mini heat map:** the row from Section 2 for this function and level.
@@ -105,12 +105,12 @@ The user picks a title from a dropdown of 25–30 pre-defined leadership titles 
 
 Build out to 25–30 titles across all six functions, balanced. Examples:
 
-- **Engineering:** Senior Director of Engineering, VP of Engineering, SVP of Engineering, Senior Director of Platform Engineering, VP of Infrastructure
-- **Product:** Senior Director of Product, VP of Product, SVP of Product, Senior Director of Product (Payments)
-- **Finance:** Senior Director of FP&A, VP of Finance, VP of Treasury, SVP of Finance
-- **Operations:** Senior Director of Risk Operations, VP of Operations, SVP of Operations
-- **Technical Programs:** Senior Director of TPM, VP of Technical Program Management
-- **Revenue:** Senior Director of Sales, VP of Revenue, SVP of Revenue, VP of Partnerships
+- **Engineering:** Senior Director of Engineering, Vice President of Engineering, Senior Vice President of Engineering, Senior Director of Platform Engineering, Vice President of Infrastructure
+- **Product:** Senior Director of Product, Vice President of Product, Senior Vice President of Product, Senior Director of Product (Payments)
+- **Finance:** Senior Director of Financial Planning & Analysis, Vice President of Finance, Vice President of Treasury, Senior Vice President of Finance
+- **Operations:** Senior Director of Risk Operations, Vice President of Operations, Senior Vice President of Operations
+- **Technical Programs:** Senior Director of Technical Program Management, Vice President of Technical Program Management
+- **Revenue:** Senior Director of Sales, Vice President of Revenue, Senior Vice President of Revenue, Vice President of Partnerships
 
 > **Open decision:** finalize the exact 25–30 title list in the first PR that builds Section 4.
 
