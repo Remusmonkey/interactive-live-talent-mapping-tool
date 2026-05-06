@@ -70,17 +70,16 @@ Storage: `data/competitor_postings.csv`, `data/insights.json`.
 
 A 6×3 grid (functions × levels) showing hiring difficulty as a Plotly heat map.
 
-Difficulty score is a composite of three inputs:
+Difficulty score is a composite of two inputs:
 
 1. **Talent pool size** — count of qualified candidates in geo, manually pulled from LinkedIn Recruiter.
-2. **Comp inflation rate** — year-over-year % movement, manually curated from public sources.
-3. **Outreach response rates** — pulled from Gem, manually exported.
+2. **Outreach response rates** — pulled from Gem, manually exported.
 
-Cells are colored low / medium / high based on the composite. Hovering on a cell shows the three component values that drive the score.
+Cells are colored low / medium / high based on the composite. Hovering on a cell shows the two component values that drive the score.
 
-> **Open decision:** the exact formula combining the three inputs into a low/medium/high score is TBD. Propose one in the first PR that builds Section 2; the team approves before implementation.
+> **Open decision:** the exact formula combining the two inputs into a low/medium/high score is TBD. Propose one in the first PR that builds Section 2; the team approves before implementation.
 
-Storage: `data/talent_pool.csv`, `data/comp_inflation.csv`, `data/gem_response_rates.csv`.
+Storage: `data/talent_pool.csv`, `data/gem_response_rates.csv`.
 
 ## Section 3 — Compensation Benchmarking
 
@@ -143,7 +142,6 @@ A "Publish to Notion" button at the top of the Streamlit app:
 | Competitor postings | Public job boards (Greenhouse public boards for Stripe/Brex/Ramp/Block; Workday/Lever for others). Manually curated weekly. | `data/competitor_postings.csv` |
 | Trend insights | Manually written based on competitor postings + news. | `data/insights.json` |
 | Talent pool sizes | Manual LinkedIn Recruiter searches by title × geo × company. Recorded in CSV. | `data/talent_pool.csv` |
-| Comp inflation | Manually curated YoY % from public job postings and news. | `data/comp_inflation.csv` |
 | Outreach response rates | Gem dashboards, manually exported. | `data/gem_response_rates.csv` |
 | Comp benchmarks | Manually curated from public job postings, Levels.fyi, executive hire press coverage. | `data/comp_benchmarks.csv` |
 
