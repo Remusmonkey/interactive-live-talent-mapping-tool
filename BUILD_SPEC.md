@@ -77,7 +77,21 @@ Difficulty score is a composite of two inputs:
 
 Cells are colored low / medium / high based on the composite. Hovering on a cell shows the two component values that drive the score.
 
-> **Open decision:** the exact formula combining the two inputs into a low/medium/high score is TBD. Propose one in the first PR that builds Section 2; the team approves before implementation.
+**Composite formula (locked): tertile bucket sum.**
+
+For each input independently, rank all 18 cells into thirds:
+
+- Bottom 6 cells → 1 point
+- Middle 6 cells → 2 points
+- Top 6 cells → 3 points
+
+Sum each cell's two tertile scores (range 2–6) and bucket:
+
+- **High difficulty:** sum ≤ 3
+- **Medium difficulty:** sum = 4
+- **Low difficulty:** sum ≥ 5
+
+Why this formula: chosen for explainability over statistical smoothness. Hiring managers can audit any cell with the simple framing "this cell ranks bottom/middle/top in pool size and bottom/middle/top in response rate." Trade-off accepted: loses gradient between, e.g., "small" and "very small" pools.
 
 Storage: `data/talent_pool.csv`, `data/gem_response_rates.csv`.
 
