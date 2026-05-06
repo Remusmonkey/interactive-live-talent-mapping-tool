@@ -1,4 +1,19 @@
 function,level,response_rate_pct,sample_size,as_of_date,notes
-Engineering,VP,placeholder,placeholder,2026-04-30,placeholder row - replace with Gem export
-Product,VP,placeholder,placeholder,2026-04-30,placeholder row
-Finance,Senior Director,placeholder,placeholder,2026-04-30,placeholder row
+Operations,Senior Director,28.4,118,2026-05-06,synthetic - industry benchmark for Gem demo
+Operations,VP,22.7,82,2026-05-06,synthetic - industry benchmark for Gem demo
+Operations,SVP,17.5,48,2026-05-06,synthetic - industry benchmark for Gem demo
+Technical Programs,Senior Director,26.9,104,2026-05-06,synthetic - industry benchmark for Gem demo
+Technical Programs,VP,21.3,76,2026-05-06,synthetic - industry benchmark for Gem demo
+Technical Programs,SVP,16.1,42,2026-05-06,synthetic - industry benchmark for Gem demo
+Product,Senior Director,24.6,98,2026-05-06,synthetic - industry benchmark for Gem demo
+Product,VP,19.8,71,2026-05-06,synthetic - industry benchmark for Gem demo
+Product,SVP,14.7,39,2026-05-06,synthetic - industry benchmark for Gem demo
+Engineering,Senior Director,21.5,112,2026-05-06,synthetic - industry benchmark for Gem demo
+Engineering,VP,16.8,86,2026-05-06,synthetic - industry benchmark for Gem demo
+Engineering,SVP,12.4,46,2026-05-06,synthetic - industry benchmark for Gem demo
+Revenue,Senior Director,33.2,142,2026-05-06,synthetic - industry benchmark for Gem demo
+Revenue,VP,28.1,103,2026-05-06,synthetic - industry benchmark for Gem demo
+Revenue,SVP,22.4,61,2026-05-06,synthetic - industry benchmark for Gem demo
+Finance,Senior Director,30.5,128,2026-05-06,synthetic - industry benchmark for Gem demo
+Finance,VP,25.3,91,2026-05-06,synthetic - industry benchmark for Gem demo
+Finance,SVP,19.2,52,2026-05-06,synthetic - industry benchmark for Gem demo
