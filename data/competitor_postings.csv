@@ -1,4 +1,34 @@
 company,title,function,level,location,posted_date
-Stripe,VP of Engineering (placeholder),Engineering,VP,San Francisco CA,2026-04-15
-Brex,Senior Director of FP&A (placeholder),Finance,Senior Director,New York NY,2026-04-22
-Ramp,VP of Product (placeholder),Product,VP,Remote US,2026-04-28
+Stripe,VP of Engineering,Engineering,VP,San Francisco CA,2026-04-15
+Stripe,Senior Director of Product (Payments),Product,Senior Director,Seattle WA,2026-04-22
+Stripe,SVP of Revenue,Revenue,SVP,New York NY,2026-03-30
+Stripe,VP of Infrastructure,Engineering,VP,Remote US,2026-04-28
+Stripe,Senior Director of FP&A,Finance,Senior Director,San Francisco CA,2026-05-01
+Stripe,VP of Technical Program Management,Technical Programs,VP,Seattle WA,2026-04-10
+Block,VP of Operations,Operations,VP,Oakland CA,2026-04-08
+Block,Senior Director of Risk Operations,Operations,Senior Director,San Francisco CA,2026-04-25
+Block,VP of Engineering,Engineering,VP,Remote US,2026-04-18
+Block,Senior Director of Sales,Revenue,Senior Director,New York NY,2026-03-28
+Block,VP of Product,Product,VP,Oakland CA,2026-05-02
+Block,SVP of Engineering,Engineering,SVP,San Francisco CA,2026-04-04
+Brex,VP of Finance,Finance,VP,New York NY,2026-04-20
+Brex,Senior Director of FP&A,Finance,Senior Director,San Francisco CA,2026-04-22
+Brex,VP of Engineering,Engineering,VP,Salt Lake City UT,2026-04-05
+Brex,Senior Director of Product,Product,Senior Director,New York NY,2026-04-30
+Brex,VP of Partnerships,Revenue,VP,Remote US,2026-04-12
+Ramp,VP of Product,Product,VP,New York NY,2026-04-28
+Ramp,Senior Director of Engineering,Engineering,Senior Director,San Francisco CA,2026-04-14
+Ramp,SVP of Revenue,Revenue,SVP,New York NY,2026-04-02
+Ramp,VP of Operations,Operations,VP,Miami FL,2026-04-25
+Ramp,Senior Director of TPM,Technical Programs,Senior Director,Remote US,2026-05-03
+Wise,VP of Engineering,Engineering,VP,Austin TX,2026-04-09
+Wise,Senior Director of Product,Product,Senior Director,New York NY,2026-04-17
+Wise,VP of Finance,Finance,VP,Tampa FL,2026-04-01
+Adyen,VP of Revenue,Revenue,VP,San Francisco CA,2026-04-11
+Adyen,Senior Director of Engineering,Engineering,Senior Director,Chicago IL,2026-04-19
+Adyen,VP of Product,Product,VP,New York NY,2026-04-26
+Adyen,Senior Director of Partnerships,Revenue,Senior Director,San Francisco CA,2026-05-01
+Revolut,VP of Product,Product,VP,New York NY,2026-04-07
+Revolut,Senior Director of Risk Operations,Operations,Senior Director,Dallas TX,2026-04-21
+Revolut,VP of Engineering,Engineering,VP,Remote US,2026-04-16
+Revolut,Senior Director of FP&A,Finance,Senior Director,New York NY,2026-04-29
