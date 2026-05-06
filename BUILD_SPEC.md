@@ -61,7 +61,7 @@ Built by sourcers and recruiters (non-engineers). Code should be readable, well-
 What types of senior roles each Tier 1 competitor is currently hiring for.
 
 - For each of the seven companies, render a table of posted SrDir/VP/SVP roles with columns: `title`, `function`, `level`, `location`, `posted_date`.
-- Render a "Trends and Insights" panel with 3–5 manually curated insights below the table (e.g., "Stripe and Brex are both hiring VPs of Engineering, suggesting platform team build-out").
+- Render an "Industry Signals" panel with 3–5 manually curated insights below the table. Mix Tier 1 hiring trends with broader fintech industry news (e.g., "Block named to TIME's most influential finance companies for 2026", "PayPal spins out Venmo as a standalone unit"). Insights don't have to be drawn solely from the Tier 1 postings dataset — public market signals about non-Tier 1 fintechs are in-scope as long as they're relevant to leadership talent flows.
 - Data source: public job boards, manually curated weekly.
 
 Storage: `data/competitor_postings.csv`, `data/insights.json`.

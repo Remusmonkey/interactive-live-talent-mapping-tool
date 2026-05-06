@@ -1,7 +1,8 @@
 """Section 1 — Competitive Landscape.
 
 Renders, for each Tier 1 company, a table of currently posted SrDir/VP/SVP
-roles plus a curated "Trends and Insights" panel.
+roles plus a curated "Industry Signals" panel that mixes Tier 1 hiring
+trends with broader fintech industry news.
 
 Data sources:
   - data/competitor_postings.csv  (columns: company, title, function, level, location, posted_date)
