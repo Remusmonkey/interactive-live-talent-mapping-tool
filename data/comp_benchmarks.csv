@@ -1,19 +1,19 @@
 function,level,location,total_cash_median,total_cash_p25,total_cash_p75,equity_grant_median,source_type,source_url,as_of_date,notes
 Engineering,Senior Director,United States,360000,300000,420000,450000,levels_fyi,https://example.com/synthetic/levels-fyi/eng-srdir,2026-05-06,synthetic test data
-Engineering,VP,United States,480000,400000,580000,800000,levels_fyi,https://example.com/synthetic/levels-fyi/eng-vp,2026-05-06,synthetic test data
-Engineering,SVP,United States,650000,550000,800000,1500000,news_article,https://example.com/synthetic/news/eng-svp,2026-05-06,synthetic test data
+Engineering,Vice President,United States,480000,400000,580000,800000,levels_fyi,https://example.com/synthetic/levels-fyi/eng-vp,2026-05-06,synthetic test data
+Engineering,Senior Vice President,United States,650000,550000,800000,1500000,news_article,https://example.com/synthetic/news/eng-svp,2026-05-06,synthetic test data
 Product,Senior Director,United States,340000,290000,400000,425000,levels_fyi,https://example.com/synthetic/levels-fyi/product-srdir,2026-05-06,synthetic test data
-Product,VP,United States,460000,390000,560000,750000,levels_fyi,https://example.com/synthetic/levels-fyi/product-vp,2026-05-06,synthetic test data
-Product,SVP,United States,620000,540000,780000,1400000,news_article,https://example.com/synthetic/news/product-svp,2026-05-06,synthetic test data
+Product,Vice President,United States,460000,390000,560000,750000,levels_fyi,https://example.com/synthetic/levels-fyi/product-vp,2026-05-06,synthetic test data
+Product,Senior Vice President,United States,620000,540000,780000,1400000,news_article,https://example.com/synthetic/news/product-svp,2026-05-06,synthetic test data
 Technical Programs,Senior Director,United States,310000,260000,360000,350000,public_posting,https://example.com/synthetic/public-posting/tpm-srdir,2026-05-06,synthetic test data
-Technical Programs,VP,United States,420000,360000,500000,600000,public_posting,https://example.com/synthetic/public-posting/tpm-vp,2026-05-06,synthetic test data
-Technical Programs,SVP,United States,560000,480000,680000,1100000,manual_research,https://example.com/synthetic/manual-research/tpm-svp,2026-05-06,synthetic test data
+Technical Programs,Vice President,United States,420000,360000,500000,600000,public_posting,https://example.com/synthetic/public-posting/tpm-vp,2026-05-06,synthetic test data
+Technical Programs,Senior Vice President,United States,560000,480000,680000,1100000,manual_research,https://example.com/synthetic/manual-research/tpm-svp,2026-05-06,synthetic test data
 Finance,Senior Director,United States,290000,250000,340000,300000,public_posting,https://example.com/synthetic/public-posting/finance-srdir,2026-05-06,synthetic test data
-Finance,VP,United States,400000,350000,470000,550000,public_posting,https://example.com/synthetic/public-posting/finance-vp,2026-05-06,synthetic test data
-Finance,SVP,United States,550000,475000,650000,1000000,news_article,https://example.com/synthetic/news/finance-svp,2026-05-06,synthetic test data
+Finance,Vice President,United States,400000,350000,470000,550000,public_posting,https://example.com/synthetic/public-posting/finance-vp,2026-05-06,synthetic test data
+Finance,Senior Vice President,United States,550000,475000,650000,1000000,news_article,https://example.com/synthetic/news/finance-svp,2026-05-06,synthetic test data
 Operations,Senior Director,United States,280000,240000,330000,300000,public_posting,https://example.com/synthetic/public-posting/ops-srdir,2026-05-06,synthetic test data
-Operations,VP,United States,390000,340000,460000,525000,public_posting,https://example.com/synthetic/public-posting/ops-vp,2026-05-06,synthetic test data
-Operations,SVP,United States,530000,460000,620000,950000,manual_research,https://example.com/synthetic/manual-research/ops-svp,2026-05-06,synthetic test data
+Operations,Vice President,United States,390000,340000,460000,525000,public_posting,https://example.com/synthetic/public-posting/ops-vp,2026-05-06,synthetic test data
+Operations,Senior Vice President,United States,530000,460000,620000,950000,manual_research,https://example.com/synthetic/manual-research/ops-svp,2026-05-06,synthetic test data
 Revenue,Senior Director,United States,320000,270000,380000,350000,public_posting,https://example.com/synthetic/public-posting/revenue-srdir,2026-05-06,synthetic test data
-Revenue,VP,United States,460000,390000,550000,700000,public_posting,https://example.com/synthetic/public-posting/revenue-vp,2026-05-06,synthetic test data
-Revenue,SVP,United States,640000,550000,780000,1300000,news_article,https://example.com/synthetic/news/revenue-svp,2026-05-06,synthetic test data
+Revenue,Vice President,United States,460000,390000,550000,700000,public_posting,https://example.com/synthetic/public-posting/revenue-vp,2026-05-06,synthetic test data
+Revenue,Senior Vice President,United States,640000,550000,780000,1300000,news_article,https://example.com/synthetic/news/revenue-svp,2026-05-06,synthetic test data

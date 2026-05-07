@@ -30,7 +30,7 @@ def build_linkedin_xray(
 
     Args:
         function_keyword: Free-form keyword describing the function
-            (e.g., "Product", "Engineering", "FP&A").
+            (e.g., "Product", "Engineering", "Financial Planning & Analysis").
         companies: Tier 1 company names to scope the search to.
         location: City, region, or country (e.g., "San Francisco", "United States").
 

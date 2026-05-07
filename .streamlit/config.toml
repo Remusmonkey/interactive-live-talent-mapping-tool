@@ -1,0 +1,23 @@
+# Affirm-branded Streamlit theme.
+#
+# Brand palette reference:
+#   Light Indigo  #9DADF9   RGB 157/173/249
+#   Indigo        #4A4AF4   RGB 74/74/244
+#   Dark Indigo   #0A0340   RGB 10/3/64
+#   White         #FFFFFF
+#   Affirm Black  #13131F
+#
+# Streamlit's theme covers: page background, buttons, links, text, sidebar,
+# tabs, info/success/error containers, dataframes. It does NOT override Plotly
+# chart colors — the Section 2 difficulty heat map keeps its semantic
+# red/amber/green tier colors set explicitly in code.
+#
+# Dark Indigo isn't slotted here (Streamlit's theme has only four color
+# slots). Use it as an accent in section implementations when needed.
+
+[theme]
+primaryColor = "#4A4AF4"             # Indigo — buttons, links, focus, sliders
+backgroundColor = "#FFFFFF"          # White — main page canvas
+secondaryBackgroundColor = "#9DADF9" # Light Indigo — sidebar, info containers, expanders
+textColor = "#13131F"                # Affirm Black — body text
+font = "sans serif"

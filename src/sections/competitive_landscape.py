@@ -1,8 +1,9 @@
 """Section 1 — Competitive Landscape.
 
-Renders, for each Tier 1 company, a table of currently posted SrDir/VP/SVP
-roles plus a curated "Industry Signals" panel that mixes Tier 1 hiring
-trends with broader fintech industry news.
+Renders, for each Tier 1 company, a table of currently posted Senior Director,
+Vice President, and Senior Vice President roles plus a curated "Industry
+Signals" panel that mixes Tier 1 hiring trends with broader fintech industry
+news.
 
 Data sources:
   - data/competitor_postings.csv  (columns: company, title, function, level, location, posted_date)
@@ -19,7 +20,7 @@ import streamlit as st
 def render(data_dir: Path) -> None:
     st.header("Competitive Landscape")
     st.caption(
-        "Senior Director, VP, and SVP roles posted at Tier 1 fintech competitors "
+        "Senior Director, Vice President, and Senior Vice President roles posted at Tier 1 fintech competitors "
         "(Stripe, Block, Brex, Ramp, Wise, Adyen, Revolut)."
     )
     st.info(
