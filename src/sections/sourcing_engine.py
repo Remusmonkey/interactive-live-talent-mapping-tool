@@ -60,6 +60,20 @@ def _format_k(amount: float) -> str:
     return f"${amount / 1_000:.0f}K"
 
 
+def _section_header(title: str, bg: str, fg: str = "#FFFFFF") -> None:
+    """Render a colored bar header for a sourcing-engine sub-section.
+
+    Replaces st.subheader so the four sub-sections can step through the Affirm
+    palette in ascending order (light indigo -> indigo -> dark indigo -> black).
+    """
+    st.markdown(
+        f"<div style='background:{bg};color:{fg};padding:12px 18px;"
+        f"border-radius:6px;margin:18px 0 14px 0;font-weight:600;"
+        f"font-size:1.05rem;letter-spacing:0.01em;'>{title}</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def render(data_dir: Path) -> None:
     st.header("Role-Based Sourcing Engine")
     st.caption(
@@ -84,9 +98,7 @@ def render(data_dir: Path) -> None:
     func, level = entry["function"], entry["level"]
     keyword = _function_keyword(selected_title)
 
-    st.divider()
-
-    st.subheader(f"1. Tier 1 companies hiring {selected_title}")
+    _section_header(f"Tier 1 companies hiring {selected_title}", bg="#9DADF9", fg="#0A0340")
     postings = pd.read_csv(data_dir / "competitor_postings.csv")
     postings["posted_date"] = pd.to_datetime(postings["posted_date"]).dt.date
     matching = postings[(postings["function"] == func) & (postings["level"] == level)]
@@ -108,9 +120,7 @@ def render(data_dir: Path) -> None:
             },
         )
 
-    st.divider()
-
-    st.subheader(f"2. Difficulty snapshot — {func}")
+    _section_header(f"Difficulty snapshot — {func}", bg="#4A4AF4")
     heatmap_df = _build_heatmap_df(data_dir)
     func_rows = heatmap_df[heatmap_df["function"] == func]
     diff_cols = st.columns(3)
@@ -128,9 +138,7 @@ def render(data_dir: Path) -> None:
             unsafe_allow_html=True,
         )
 
-    st.divider()
-
-    st.subheader(f"3. Comp benchmark — {func} / {level}")
+    _section_header(f"Comp benchmark — {func} / {level}", bg="#0A0340")
     comp_df = pd.read_csv(data_dir / "comp_benchmarks.csv")
     comp_cell = comp_df[(comp_df["function"] == func) & (comp_df["level"] == level)]
     if comp_cell.empty:
@@ -151,9 +159,7 @@ def render(data_dir: Path) -> None:
             f"Source: `{comp['source_type']}` · As of {comp['as_of_date']}"
         )
 
-    st.divider()
-
-    st.subheader("4. LinkedIn X-Ray search string")
+    _section_header("LinkedIn X-Ray search string", bg="#13131F")
     xray = build_linkedin_xray(
         function_keyword=keyword,
         companies=TIER_1_COMPANIES,

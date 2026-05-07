@@ -68,5 +68,18 @@ def render(data_dir: Path) -> None:
     with insights_path.open() as f:
         insights = json.load(f)
 
-    for insight in insights:
-        st.markdown(f"**{insight['title']}**  \n{insight['body']}")
+    cards_html = "".join(
+        f"<div style='border-left:4px solid #4A4AF4;border-radius:6px;"
+        f"padding:14px 16px;background:#9DADF9;display:flex;flex-direction:column;'>"
+        f"<div style='font-weight:600;color:#0A0340;margin-bottom:6px;font-size:0.95rem;'>"
+        f"{insight['title']}</div>"
+        f"<div style='color:#13131F;font-size:0.9rem;line-height:1.5;'>"
+        f"{insight['body']}</div>"
+        f"</div>"
+        for insight in insights
+    )
+    st.markdown(
+        "<div style='display:grid;grid-template-columns:repeat(2,1fr);"
+        f"gap:16px;margin-top:8px;'>{cards_html}</div>",
+        unsafe_allow_html=True,
+    )

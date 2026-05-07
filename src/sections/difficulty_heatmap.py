@@ -76,6 +76,27 @@ def render(data_dir: Path) -> None:
 
     df = _build_dataframe(data_dir)
 
+    tier_counts = df["tier"].value_counts().to_dict()
+    high = tier_counts.get("HIGH", 0)
+    med = tier_counts.get("MED", 0)
+    low = tier_counts.get("LOW", 0)
+    total = len(df)
+    summary_chips = (
+        f"<span style='background:{TIER_COLORS['HIGH']};color:white;padding:4px 10px;"
+        f"border-radius:4px;font-weight:600;font-size:0.85rem;'>{high} HIGH</span>"
+        f"<span style='background:{TIER_COLORS['MED']};color:white;padding:4px 10px;"
+        f"border-radius:4px;font-weight:600;font-size:0.85rem;'>{med} MED</span>"
+        f"<span style='background:{TIER_COLORS['LOW']};color:white;padding:4px 10px;"
+        f"border-radius:4px;font-weight:600;font-size:0.85rem;'>{low} LOW</span>"
+    )
+    st.markdown(
+        f"<div style='display:flex;gap:8px;align-items:center;margin:8px 0 16px 0;'>"
+        f"{summary_chips}"
+        f"<span style='color:#888;font-size:0.85rem;'>of {total} cells</span>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
     z_matrix = []
     text_matrix = []
     hover_matrix = []
