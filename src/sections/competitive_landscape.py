@@ -68,5 +68,16 @@ def render(data_dir: Path) -> None:
     with insights_path.open() as f:
         insights = json.load(f)
 
-    for insight in insights:
-        st.markdown(f"**{insight['title']}**  \n{insight['body']}")
+    for row_start in range(0, len(insights), 2):
+        cols = st.columns(2)
+        for col, insight in zip(cols, insights[row_start : row_start + 2]):
+            col.markdown(
+                f"<div style='border:1px solid #E5E5E5;border-left:4px solid #4A4AF4;"
+                f"border-radius:6px;padding:14px 16px;background:#FFFFFF;margin-bottom:12px;'>"
+                f"<div style='font-weight:600;color:#0A0340;margin-bottom:6px;font-size:0.95rem;'>"
+                f"{insight['title']}</div>"
+                f"<div style='color:#13131F;font-size:0.9rem;line-height:1.5;'>"
+                f"{insight['body']}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )

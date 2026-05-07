@@ -71,11 +71,21 @@ def render(data_dir: Path) -> None:
             cash_p25 = _format_k(row["total_cash_p25"])
             cash_p75 = _format_k(row["total_cash_p75"])
             equity = _format_k(row["equity_grant_median"])
+            source_url = str(row.get("source_url", "")).strip()
+            source_type = str(row.get("source_type", "")).strip()
+            source_caption = ""
+            if source_url and source_url.lower() != "nan":
+                source_caption = (
+                    f"<div style='font-size:0.7rem;color:#888;margin-top:4px;'>"
+                    f"<a href='{source_url}' target='_blank' style='color:#888;text-decoration:none;'>"
+                    f"Source: {source_type} &#8599;</a></div>"
+                )
             col.markdown(
                 f"<div style='line-height:1.5;padding:6px 0;'>"
                 f"<div style='font-size:1.1rem;font-weight:600;color:#0A0340;'>{cash_median} cash</div>"
                 f"<div style='font-size:0.85rem;color:#13131F;'>{cash_p25}–{cash_p75} range</div>"
                 f"<div style='font-size:0.95rem;color:#4A4AF4;'>{equity} equity</div>"
+                f"{source_caption}"
                 f"</div>",
                 unsafe_allow_html=True,
             )
