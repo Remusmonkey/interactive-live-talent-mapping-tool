@@ -5,18 +5,57 @@ Vice President, and Senior Vice President roles plus a curated "Industry
 Signals" panel that mixes Tier 1 hiring trends with broader fintech industry
 news.
 
-Data sources:
-  - data/competitor_postings.csv  (columns: company, title, function, level, location, posted_date)
-  - data/insights.json            (list of {title, body})
+Data sources (in priority order):
+  1. Google Sheets via service account — workbook ID + key file in .env.
+     Live data; reads tabs "Postings" and "Industry Signals".
+  2. data/competitor_postings.csv + data/insights.json. Fallback when Sheets
+     is unconfigured or unreachable. May be stale.
+
+A short cache (5 min) so the app doesn't re-fetch on every interaction but
+edits in the Sheet show up without manual reload.
 """
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Tuple
 
 import pandas as pd
 import streamlit as st
+
+from src import sheets
+
+
+_POSTINGS_REQUIRED_COLUMNS = {"company", "title", "function", "level", "location", "posted_date"}
+_INSIGHTS_REQUIRED_COLUMNS = {"title", "body"}
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _load_postings(csv_path: str) -> Tuple[pd.DataFrame, str]:
+    """Return (postings dataframe, source label) for the data-source badge.
+
+    Uses Sheets when the tab has the expected header columns, even if no
+    data rows exist yet. Falls back to local CSV when the Sheet is
+    unreachable or doesn't have the right schema.
+    """
+    df = sheets.read_tab_as_dataframe("Postings")
+    if df is not None and _POSTINGS_REQUIRED_COLUMNS.issubset(df.columns):
+        return df, "Google Sheets"
+    return pd.read_csv(csv_path), "Local CSV"
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _load_insights(json_path: str) -> Tuple[list[dict], str]:
+    """Return (insights list, source label)."""
+    df = sheets.read_tab_as_dataframe("Industry Signals")
+    if df is not None and _INSIGHTS_REQUIRED_COLUMNS.issubset(df.columns):
+        insights = df[["title", "body"]].dropna(subset=["title"]).to_dict("records")
+        # Drop rows where title is the empty string (Sheets pads blank cells).
+        insights = [i for i in insights if str(i.get("title", "")).strip()]
+        return insights, "Google Sheets"
+    with open(json_path) as f:
+        return json.load(f), "Local JSON"
 
 
 def render(data_dir: Path) -> None:
@@ -26,8 +65,17 @@ def render(data_dir: Path) -> None:
         "(Stripe, Block, Brex, Ramp, Wise, Adyen, Revolut)."
     )
 
-    postings = pd.read_csv(data_dir / "competitor_postings.csv")
-    postings["posted_date"] = pd.to_datetime(postings["posted_date"]).dt.date
+    postings, postings_source = _load_postings(str(data_dir / "competitor_postings.csv"))
+    if postings.empty:
+        st.info(
+            "No postings yet — the Google Sheets Postings tab is empty. "
+            "The scraper will populate it once Phase 1A lands."
+        )
+        st.caption(f"Source: {postings_source}.")
+        st.divider()
+        _render_industry_signals(data_dir)
+        return
+    postings["posted_date"] = pd.to_datetime(postings["posted_date"], errors="coerce").dt.date
 
     companies = sorted(postings["company"].unique())
     selected = st.multiselect(
@@ -55,18 +103,29 @@ def render(data_dir: Path) -> None:
         },
     )
 
-    st.caption(f"Showing {len(filtered)} of {len(postings)} postings.")
+    st.caption(
+        f"Showing {len(filtered)} of {len(postings)} postings. "
+        f"Source: {postings_source}."
+    )
 
     st.divider()
+    _render_industry_signals(data_dir)
 
+
+def _render_industry_signals(data_dir: Path) -> None:
     st.subheader("Industry Signals")
     st.caption(
         "Tier 1 hiring trends and broader fintech market signals relevant to leadership talent flows."
     )
 
-    insights_path = data_dir / "insights.json"
-    with insights_path.open() as f:
-        insights = json.load(f)
+    insights, insights_source = _load_insights(str(data_dir / "insights.json"))
+
+    if not insights:
+        st.info(
+            "No industry signals yet — the Google Sheets Industry Signals tab is empty."
+        )
+        st.caption(f"Source: {insights_source}.")
+        return
 
     cards_html = "".join(
         f"<div style='border-left:4px solid #4A4AF4;border-radius:6px;"
@@ -83,3 +142,4 @@ def render(data_dir: Path) -> None:
         f"gap:16px;margin-top:8px;'>{cards_html}</div>",
         unsafe_allow_html=True,
     )
+    st.caption(f"Source: {insights_source}.")

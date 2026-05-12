@@ -36,25 +36,122 @@ streamlit run app.py
 
 Streamlit opens the app in your browser at `http://localhost:8501`.
 
+## How we collaborate
+
+Two leadership sourcers maintain this tool: a **code owner** (handles app changes in Cursor) and a **data partner** (helps maintain the weekly data). Both contribute to data; only the code owner touches Python.
+
+| Lane | Who | Where the work happens | How often |
+|---|---|---|---|
+| **Data** — postings, signals, etc. | Both sourcers | Shared Google Sheet | Weekly |
+| **Code** — app behavior, fixes, polish | Code owner + AI in Cursor | This repo | As needed |
+
+The Google Sheet is the day-to-day surface for data. You don't need GitHub or Cursor to update data — you just edit cells in a shared workbook and the app picks up the changes within ~5 minutes.
+
 ## Refreshing data weekly (for non-engineers)
 
-All datasets live in `data/` as CSV or JSON files. To refresh:
+Two paths exist depending on whether the Google Sheets backend is set up yet:
+
+### Path A — Google Sheets (preferred, once configured)
+
+1. Open the shared workbook `Talent Mapping Tool — Live Data` in Google Sheets (link in team Slack).
+2. Edit the relevant tab:
+   - `Postings` — Section 1 competitor postings (one row per posting)
+   - `Industry Signals` — Section 1 news/signals panel (title + body)
+3. Save (auto-saves).
+4. Refresh the running app in your browser. New data appears within 5 minutes (caching window).
+
+No git, no command line. The app reads from the published Sheet URL on a 5-minute cache.
+
+### Path B — Local CSVs (fallback)
+
+If the Sheets backend hasn't been wired up yet, or if you're working offline:
 
 1. Open the relevant CSV (e.g., `data/competitor_postings.csv`) in Excel, Google Sheets, or any text editor.
 2. Replace or append rows. Keep the column headers exactly as they are.
 3. Save the file (Excel: "Save As" → CSV UTF-8).
-4. Commit and push:
+4. Refresh the running app — local edits are picked up immediately.
+5. (Code owner only) Commit + push the CSV when you want the change to outlive your local copy.
 
-   ```bash
-   git checkout -b chore/weekly-refresh-YYYY-MM-DD
-   git add data/
-   git commit -m "chore: weekly data refresh YYYY-MM-DD"
-   git push -u origin chore/weekly-refresh-YYYY-MM-DD
-   ```
+The app will automatically use the Sheet if `SHEET_POSTINGS_URL` and `SHEET_INDUSTRY_SIGNALS_URL` are configured in `.env`, and fall back to local files otherwise.
 
-5. Open a PR. Once merged, anyone running the app sees the updated data.
+See [BUILD_SPEC.md](./BUILD_SPEC.md) for the full data dictionary (which file/tab maps to which section).
 
-See [BUILD_SPEC.md](./BUILD_SPEC.md) for the full data dictionary (which file maps to which section).
+## Setting up the Google Sheets backend (one-time, code owner)
+
+This is a one-time setup that connects the app to a shared Google Sheet so the data partner can contribute without touching GitHub.
+
+**Auth approach:** Affirm Google Workspace blocks the simpler "publish to web" sharing flow, so the app authenticates via a Google Cloud **service account** that's been explicitly granted read access to the workbook. The Sheet itself stays inside Affirm GWS — only this one service account gets through the door.
+
+### Steps
+
+1. **Create the workbook** in Google Sheets. Name it `Talent Mapping Tool — Live Data`.
+2. **Add two tabs to start:**
+   - `Postings` — headers: `company, title, function, level, location, posted_date, source_url` (header case doesn't matter; the app normalizes to lowercase)
+   - `Industry Signals` — headers: `title, body`
+3. **Share the workbook** with the data partner as an editor.
+4. **Create a Google Cloud project + service account:**
+   - Open [console.cloud.google.com](https://console.cloud.google.com)
+   - Create a new project (e.g. `talent-mapping-tool`)
+   - Enable the **Google Sheets API** (APIs & Services → Library)
+   - Create a service account (APIs & Services → Credentials → + Create Credentials → Service account); skip the optional "grant roles" steps
+5. **Download the service account's JSON key:**
+   - Click the service account row → Keys tab → Add Key → Create new key → JSON
+   - Move the downloaded file to `secrets/google-sheets-key.json` (the `secrets/` folder is gitignored)
+6. **Share the workbook with the service account email** as a **Viewer**. The email looks like `<name>@<project>.iam.gserviceaccount.com`. Uncheck "Notify people" before clicking Share.
+7. **Get the workbook ID** from the Sheet URL (the long string between `/d/` and `/edit`).
+8. **Configure `.env`:** copy `.env.example` to `.env` and fill in `GOOGLE_SHEETS_WORKBOOK_ID` and `GOOGLE_SHEETS_KEY_FILE` (path defaults to `secrets/google-sheets-key.json`).
+9. **Restart Streamlit.** Section 1 should now read live from the Sheet. The caption under each block will say `Source: Google Sheets`.
+
+If the caption still says `Local CSV`, the app couldn't reach the Sheet — most common causes are missing/incorrect column headers (see step 2), the JSON key file not being in the right place, or the service account not having been shared on the Sheet (step 6).
+
+## Refreshing competitor postings (Phase 1A scraper)
+
+The Phase 1A scraper pulls leadership postings (Director, Head of, Senior Director, VP, SVP) from 25 competitor public job boards hosted on Greenhouse infrastructure. It's manually triggered — no schedule, no live scraping during page load.
+
+### Running it
+
+```bash
+# From the repo root, with the Google Sheets service account configured (see above)
+python3 scripts/refresh_postings.py
+```
+
+Takes ~20 seconds. Writes to two tabs in your workbook (auto-created on first run):
+
+- **`Scraped — Pending Review`** — every leadership posting found. Sourcers triage here.
+- **`Scraper Run Log`** — one row per company per run with counts + any errors. Useful for spotting board breakage.
+
+### Tier-based filtering
+
+The scraper applies different level filters depending on each competitor's tier (defined in `src/data/competitors.json`):
+
+| Tier | Companies | Level filter |
+|---|---|---|
+| **primary** | Stripe, Brex, Block, Sezzle, SoFi, Adyen, Mercury | Director, Senior Director, Head of, VP, SVP |
+| **secondary** | Marqeta, Robinhood, Chime, Betterment, Checkr, N26, Nubank, Anthropic, Figma, Asana, Discord, Reddit, Pinterest, Airbnb, Instacart, Lyft, Roblox, Duolingo | Senior Director, Head of, VP, SVP (skip plain Director — too many IC titles at consumer tech) |
+
+To move a company between tiers, edit `src/data/competitors.json` — no code change needed.
+
+### What the scraper does NOT touch
+
+- Affirm's internal Greenhouse ATS (this targets *competitors'* public boards, hosted on Greenhouse the SaaS)
+- The `Postings` tab — sourcers manually promote approved rows from Pending Review after triage
+- Compensation, talent pool, or any data outside Section 1
+
+### Triage workflow (sourcer)
+
+1. Run the scraper weekly: `python3 scripts/refresh_postings.py`
+2. Open the workbook and review the `Scraped — Pending Review` tab
+3. For each row: keep, edit (fix function/level), or delete
+4. Pay extra attention to rows where `function = Other` — those didn't match any of the six BUILD_SPEC functions and need manual classification
+5. Copy approved rows into the `Postings` tab (the one the app reads from)
+6. Glance at `Scraper Run Log` for any company with `status != ok` — that means their board is broken or moved off Greenhouse
+
+### Companies NOT on Greenhouse
+
+These competitors run their public boards on different infrastructure and need separate scrapers in future phases:
+
+- **Ashby:** Ramp (Phase 1B)
+- **Workday / their own ATS:** Klarna, Coinbase, Plaid, DoorDash, Uber, Notion, OpenAI, Shopify, Bill.com, Wise, Revolut, TikTok/ByteDance, Etsy (Phase 1C+)
 
 ## Adding a new role title to the dropdown
 
@@ -66,7 +163,7 @@ Role titles live in `src/sections/sourcing_engine.py` (constant `DROPDOWN_TITLES
 
 ## Project status
 
-**Day 1 — scaffold complete.** Sections render placeholder content. Real implementations land per the build sequence in [BUILD_SPEC.md](./BUILD_SPEC.md).
+**Phase 1 — real data rollout in progress.** All four sections render with placeholder/synthetic data today. Section 1 (Competitive Landscape) is the first to move to real data via the Google Sheets backend + a scraper pipeline (see `scripts/refresh_postings.py` once it lands). Sections 2-4 stay on synthetic CSVs until their own phases. See [PROJECT_LOG.md](./PROJECT_LOG.md) for the live working log.
 
 ## Documentation map
 
@@ -74,7 +171,8 @@ Role titles live in `src/sections/sourcing_engine.py` (constant `DROPDOWN_TITLES
 |---|---|
 | [README.md](./README.md) | How to run the app and refresh data (this file) |
 | [BUILD_SPEC.md](./BUILD_SPEC.md) | Locked scope, data schemas, build sequence, non-goals, code constraints |
-| [SETUP.md](./SETUP.md) | First-time team onboarding (GitHub auth, repo access, daily workflow) |
+| [PROJECT_LOG.md](./PROJECT_LOG.md) | Living working log — decisions, sessions, recurring issues, open TODOs |
+| [SETUP.md](./SETUP.md) | First-time code-owner onboarding (GitHub auth, repo access, daily workflow) |
 
 ## Contributing
 
