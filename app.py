@@ -137,16 +137,16 @@ def main() -> None:
 
     st.markdown(
         f"<div style='font-size:1.05rem;line-height:1.6;color:{AFFIRM_BLACK};margin-bottom:8px;'>"
-        "A weekly-refreshed view of the senior leadership talent market across our seven Tier 1 fintech "
-        "competitors. Use it to size the candidate pool, gauge outreach difficulty, benchmark comp, and "
-        "generate sourcing strings for any function and level — all from one place, before the first "
-        "calibration call."
+        "A weekly-refreshed view of the leadership talent market across 32 Consumer Tech and Fintech "
+        "competitors, scraped from public job boards on Greenhouse and Ashby. Use it to size the candidate "
+        "pool, gauge outreach difficulty, benchmark comp, and generate sourcing strings for any function "
+        "and level — all from one place, before the first calibration call."
         "</div>",
         unsafe_allow_html=True,
     )
     st.caption(
-        "Senior Director · Vice President · Senior Vice President · "
-        "Operations · Technical Programs · Product · Engineering · Revenue · Finance"
+        "Director · Senior Director · Head of · Vice President · Senior Vice President · "
+        "Operations · Technical Programs · Product · Engineering · Revenue · Finance · Growth"
     )
 
     publish_col, _spacer = st.columns([1, 4])
