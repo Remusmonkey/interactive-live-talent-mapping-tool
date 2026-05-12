@@ -80,14 +80,29 @@ See [BUILD_SPEC.md](./BUILD_SPEC.md) for the full data dictionary (which file/ta
 
 This is a one-time setup that connects the app to a shared Google Sheet so the data partner can contribute without touching GitHub.
 
+**Auth approach:** Affirm Google Workspace blocks the simpler "publish to web" sharing flow, so the app authenticates via a Google Cloud **service account** that's been explicitly granted read access to the workbook. The Sheet itself stays inside Affirm GWS — only this one service account gets through the door.
+
+### Steps
+
 1. **Create the workbook** in Google Sheets. Name it `Talent Mapping Tool — Live Data`.
 2. **Add two tabs to start:**
-   - `Postings` — columns: `company, title, function, level, location, posted_date, source_url` (the last one is optional but recommended)
-   - `Industry Signals` — columns: `title, body`
+   - `Postings` — headers: `company, title, function, level, location, posted_date, source_url` (header case doesn't matter; the app normalizes to lowercase)
+   - `Industry Signals` — headers: `title, body`
 3. **Share the workbook** with the data partner as an editor.
-4. **Publish each tab to CSV:** for each tab, `File → Share → Publish to web → [select tab] → Comma-separated values (.csv) → Publish`. Copy the URL it gives you.
-5. **Add the URLs to your local `.env` file** (see [.env.example](./.env.example) for the variable names and a step-by-step).
-6. **Restart the app.** It will start reading from the Sheet instead of the local CSVs.
+4. **Create a Google Cloud project + service account:**
+   - Open [console.cloud.google.com](https://console.cloud.google.com)
+   - Create a new project (e.g. `talent-mapping-tool`)
+   - Enable the **Google Sheets API** (APIs & Services → Library)
+   - Create a service account (APIs & Services → Credentials → + Create Credentials → Service account); skip the optional "grant roles" steps
+5. **Download the service account's JSON key:**
+   - Click the service account row → Keys tab → Add Key → Create new key → JSON
+   - Move the downloaded file to `secrets/google-sheets-key.json` (the `secrets/` folder is gitignored)
+6. **Share the workbook with the service account email** as a **Viewer**. The email looks like `<name>@<project>.iam.gserviceaccount.com`. Uncheck "Notify people" before clicking Share.
+7. **Get the workbook ID** from the Sheet URL (the long string between `/d/` and `/edit`).
+8. **Configure `.env`:** copy `.env.example` to `.env` and fill in `GOOGLE_SHEETS_WORKBOOK_ID` and `GOOGLE_SHEETS_KEY_FILE` (path defaults to `secrets/google-sheets-key.json`).
+9. **Restart Streamlit.** Section 1 should now read live from the Sheet. The caption under each block will say `Source: Google Sheets`.
+
+If the caption still says `Local CSV`, the app couldn't reach the Sheet — most common causes are missing/incorrect column headers (see step 2), the JSON key file not being in the right place, or the service account not having been shared on the Sheet (step 6).
 
 ## Adding a new role title to the dropdown
 

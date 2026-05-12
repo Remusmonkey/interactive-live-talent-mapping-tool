@@ -93,13 +93,21 @@ The project transitioned from a one-week demo to an ongoing working tool used by
 
 #### What landed in this session (foundation work)
 
-1. New `src/config.py` — centralized env loader for Google Sheets URLs + Notion credentials. Uses `python-dotenv` (already a dep).
-2. `.env.example` extended with `SHEET_POSTINGS_URL` and `SHEET_INDUSTRY_SIGNALS_URL` plus a step-by-step on how to get a published-CSV URL from Google Sheets.
-3. Section 1 (`src/sections/competitive_landscape.py`) refactored to read from Sheets if configured, fall back to local CSV/JSON otherwise. 5-minute `@st.cache_data` TTL so edits in the Sheet show up within 5 minutes without a manual reload. Source label ("Google Sheets" vs "Local CSV") rendered under each block so it's visible which source the app is using.
-4. README rewritten:
+1. New `src/config.py` — centralized env loader for Google Sheets credentials + Notion. Uses `python-dotenv` (already a dep).
+2. New `src/sheets.py` — gspread + service account wrapper. Reads any tab as a pandas DataFrame. Lowercases + underscore-normalizes column names so headers like "Posted Date" vs "posted_date" both work.
+3. Section 1 (`src/sections/competitive_landscape.py`) refactored to read from Sheets via the service account, fall back to local CSV/JSON otherwise. 5-minute `@st.cache_data` TTL so edits in the Sheet show up within 5 minutes without manual reload. Source label ("Google Sheets" vs "Local CSV") rendered under each block. Graceful empty-state handling when a tab exists with the right schema but no data rows yet.
+4. `.env.example` rewritten with the service account variables (`GOOGLE_SHEETS_WORKBOOK_ID`, `GOOGLE_SHEETS_KEY_FILE`) and step-by-step setup instructions.
+5. `.gitignore` extended to exclude `secrets/` and `*.serviceaccount.json` patterns.
+6. `requirements.txt` adds `gspread>=6.0` and `google-auth>=2.0`.
+7. README rewritten:
    - New "How we collaborate" section explaining the code-owner / data-partner split
    - "Refreshing data weekly" split into Path A (Google Sheets) and Path B (Local CSVs fallback)
    - New "Setting up the Google Sheets backend" one-time setup section for the code owner
+
+#### Bumps along the way
+
+- **First tried publish-to-web CSV URLs** (the simpler approach). Confirmed via the publish-to-web dialog: Affirm Workspace restricts the audience to "Affirm, Inc." which means external/unauthenticated requests get 401. **Pivoted to the service account approach** — same end-state (data partner edits a Sheet, app reads it), different auth path.
+- **Column-name case sensitivity bit us on first test.** Sourcers naturally type "Title" or "Posted Date"; the code expected lowercase. Fixed in `src/sheets.py` by lowercasing + underscore-normalizing all column names from Sheets — sourcers can use any reasonable header style.
 
 #### What's next
 
@@ -179,6 +187,7 @@ The `--prune` cleans up stale remote-tracking refs for branches that were delete
 | 2026-05-12 | Collab model: code owner (Heather) + data partner; both edit data via Google Sheets, only code owner edits Python | Two non-engineers can't sustainably both edit Python; spreadsheets match how recruiters already work |
 | 2026-05-12 | First "real data" problem area is Section 1 (competitor postings) | Most automatable section + highest stakeholder visibility + sets up the Sheets backend other sections will reuse |
 | 2026-05-12 | Scrapers first, no manual hand-curation baseline | "Time isn't an issue; get the tool right" — no throw-away work |
+| 2026-05-12 | Google Sheets auth: service account, not publish-to-web | Affirm Workspace restricts publish-to-web to Affirm-only; service account is the standard enterprise pattern and works regardless of publish-to-web policy |
 
 ---
 

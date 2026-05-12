@@ -3,6 +3,10 @@
 .env.local
 .env.*.local
 
+# Service account keys + other secrets (NEVER commit)
+secrets/
+*.serviceaccount.json
+
 # Python
 __pycache__/
 *.py[cod]

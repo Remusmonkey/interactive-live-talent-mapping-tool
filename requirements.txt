@@ -10,5 +10,9 @@ plotly>=5.18
 notion-client>=2.2
 python-dotenv>=1.0
 
+# Google Sheets backend (Phase 1)
+gspread>=6.0
+google-auth>=2.0
+
 # Dev / test
 pytest>=8.0
