@@ -161,10 +161,17 @@ The original plan was a scraper for 4 named competitors (Stripe, Brex, Ramp, Blo
 - **First run hit `403 Caller does not have permission`** because the service account was still Viewer from the Session 3 setup. Bumping to Editor fixed it. Documented this gotcha in the scraper setup instructions.
 - **Engineering fallback was misleading.** First version of the function classifier defaulted to "Engineering" when no keyword matched. Sheriff flagged this — sourcers would see 55 Engineering rows and assume the classifier was working when half were Marketing/Comms/Legal/HR titles. Changed fallback to "Other" — now sourcers can see exactly which rows need manual triage at a glance.
 
+#### Mid-session refinement — Growth added as a 7th function
+
+After the first live run, several "Other" rows turned out to be legitimate Growth roles (Director of Organic Growth & Discoverability, Head of Integrated Campaigns, Head of Growth Marketing, etc.). Sourcer requested adding **Growth** as a classifier function. Implemented with a deliberately conservative priority — Growth fires only after Revenue, Operations, and Product have a chance to match, so mixed titles like "Head of Sales, Growth" stay Revenue and "Director of Product, Growth/AI" stays Product. Net effect: 7 rows moved Other → Growth, no rows displaced from established functions.
+
+**Asymmetry to be aware of:** BUILD_SPEC still locks Sections 2-4 to 6 functions (no Growth). The scraper and Section 1 surface Growth, but Sections 2-4 will continue to show only the 6 originals until BUILD_SPEC is formally expanded with Growth × all 3 levels of comp + talent-pool data.
+
 #### What's next
 
 - **User action (sourcers):** triage the first batch of 108 rows in the `Scraped — Pending Review` tab. Keep, edit, or delete each. Copy approved rows into the `Postings` tab. Pay extra attention to `function = Other` rows.
 - **Code owner action:** evaluate Phase 1B candidate — Ashby scraper for Ramp (and any other Ashby-hosted competitors discovered later). Same shape as Phase 1A: fetch → classify → write to Pending Review.
+- **Future BUILD_SPEC expansion:** if Growth proves useful in practice, expand from 6 to 7 functions formally — add Growth × Senior Director / Vice President / Senior Vice President rows to `comp_benchmarks.csv` and `talent_pool.csv`, update Section 2 heatmap, update Section 4 sourcing engine dropdown.
 
 ---
 
@@ -240,6 +247,8 @@ The `--prune` cleans up stale remote-tracking refs for branches that were delete
 | 2026-05-12 | Level filter relaxed from BUILD_SPEC strict (SD/VP/SVP) to include Director + Head of | 23 hits vs 177 hits across 879 candidate jobs — strict filter would produce a near-empty tool that looks broken on first run |
 | 2026-05-12 | Two-tier filter: broad for direct competitors, narrower for the broader Consumer Tech + Fintech list | Pragmatic compromise — direct competitor Director signal is valuable; consumer-tech "Director" titles are too often senior IC to be useful as leadership signal |
 | 2026-05-12 | Function classifier fallback is "Other," not "Engineering" | Engineering fallback would hide misclassifications. "Other" surfaces them honestly so sourcers know which rows need manual classification before promoting to Postings |
+| 2026-05-12 | Added Growth as a 7th classifier function (scraper-only, not BUILD_SPEC) | Several "Other" rows were legitimate Growth roles (Organic Growth, Growth Marketing, Integrated Campaigns). Sections 2-4 still show 6 functions until BUILD_SPEC is formally expanded |
+| 2026-05-12 | Growth placed AFTER Revenue/Product in classifier priority | Conservative — pure Growth titles fire as Growth, but mixed titles ("Head of Sales, Growth", "Director of Product, Growth/AI") stay with their primary function |
 
 ---
 

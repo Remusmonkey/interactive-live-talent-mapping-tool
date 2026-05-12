@@ -78,7 +78,16 @@ _LEVEL_PATTERNS = [
 #   3. Revenue — distinct vocabulary
 #   4. Operations — moderately specific
 #   5. Product — common word, but rarely misleading in a senior title
-#   6. Engineering — broadest, catches everything else
+#   6. Growth — placed AFTER the established functions so "Head of Sales,
+#      Growth" stays Revenue and "Director of Product, Growth/AI" stays
+#      Product. Only pure Growth titles (Head of Growth Marketing,
+#      Director of Organic Growth) fall through to here.
+#   7. Engineering — broadest, catches everything else
+#
+# Growth note: NOT in the 6 BUILD_SPEC functions today. It's a scraper-only
+# extension so Section 1 can surface Growth roles competitors are hiring.
+# Sections 2-4 will continue to show only the 6 BUILD_SPEC functions until
+# BUILD_SPEC is formally expanded with comp + talent-pool data for Growth.
 _FUNCTION_PATTERNS = [
     ("Technical Programs", [
         r"\bTechnical Program(?:s|me)?\b",
@@ -117,6 +126,16 @@ _FUNCTION_PATTERNS = [
         r"\bProduct\b",
         r"\bUX\b",
         r"\bDesign\b",
+    ]),
+    ("Growth", [
+        r"\bGrowth\b",
+        r"\bPerformance Marketing\b",
+        r"\bDemand Gen(?:eration)?\b",
+        r"\bUser Acquisition\b",
+        r"\bLifecycle\b",
+        r"\bRetention\b",
+        r"\bAcquisition Marketing\b",
+        r"\bIntegrated Campaigns?\b",
     ]),
     ("Engineering", [
         r"\bEngineering\b",
