@@ -104,9 +104,9 @@ This is a one-time setup that connects the app to a shared Google Sheet so the d
 
 If the caption still says `Local CSV`, the app couldn't reach the Sheet — most common causes are missing/incorrect column headers (see step 2), the JSON key file not being in the right place, or the service account not having been shared on the Sheet (step 6).
 
-## Refreshing competitor postings (Phase 1A scraper)
+## Refreshing competitor postings (Phase 1A + 1B scraper)
 
-The Phase 1A scraper pulls leadership postings (Director, Head of, Senior Director, VP, SVP) from 25 competitor public job boards hosted on Greenhouse infrastructure. It's manually triggered — no schedule, no live scraping during page load.
+The scraper pulls leadership postings (Director, Head of, Senior Director, VP, SVP) from 32 competitor public job boards: 25 hosted on **Greenhouse** + 7 hosted on **Ashby**. Manually triggered — no schedule, no live scraping during page load.
 
 ### Running it
 
@@ -120,16 +120,23 @@ Takes ~20 seconds. Writes to two tabs in your workbook (auto-created on first ru
 - **`Scraped — Pending Review`** — every leadership posting found. Sourcers triage here.
 - **`Scraper Run Log`** — one row per company per run with counts + any errors. Useful for spotting board breakage.
 
-### Tier-based filtering
+### Tier-based filtering + sources
 
-The scraper applies different level filters depending on each competitor's tier (defined in `src/data/competitors.json`):
+Each competitor in `src/data/competitors.json` has a `tier` (broad vs. narrow level filter) and a `source` (which SaaS hosts their public board).
 
 | Tier | Companies | Level filter |
 |---|---|---|
-| **primary** | Stripe, Brex, Block, Sezzle, SoFi, Adyen, Mercury | Director, Senior Director, Head of, VP, SVP |
-| **secondary** | Marqeta, Robinhood, Chime, Betterment, Checkr, N26, Nubank, Anthropic, Figma, Asana, Discord, Reddit, Pinterest, Airbnb, Instacart, Lyft, Roblox, Duolingo | Senior Director, Head of, VP, SVP (skip plain Director — too many IC titles at consumer tech) |
+| **primary** | Stripe, Brex, Block, Ramp, Sezzle, SoFi, Adyen, Mercury | Director, Senior Director, Head of, VP, SVP |
+| **secondary** | Marqeta, Robinhood, Chime, Betterment, Checkr, N26, Nubank, Plaid, Deel, Anthropic, OpenAI, Notion, Harvey, Perplexity, Figma, Asana, Discord, Reddit, Pinterest, Airbnb, Instacart, Lyft, Roblox, Duolingo | Senior Director, Head of, VP, SVP (skip plain Director — too many IC titles at consumer tech) |
 
-To move a company between tiers, edit `src/data/competitors.json` — no code change needed.
+| Source | Companies | API endpoint |
+|---|---|---|
+| **greenhouse** | Stripe, Brex, Block, Sezzle, SoFi, Adyen, Mercury, Marqeta, Robinhood, Chime, Betterment, Checkr, N26, Nubank, Anthropic, Figma, Asana, Discord, Reddit, Pinterest, Airbnb, Instacart, Lyft, Roblox, Duolingo | `boards-api.greenhouse.io/v1/boards/<slug>/jobs` |
+| **ashby** | Ramp, Plaid, Deel, OpenAI, Notion, Harvey, Perplexity | `api.ashbyhq.com/posting-api/job-board/<slug>` |
+
+To move a company between tiers or change its source, edit `src/data/competitors.json` — no code change needed.
+
+To **add a new SaaS provider** (e.g., Lever, Workday), see the dev guide in `src/scraper.py`: add a `fetch_<provider>_jobs()` function returning the normalized job dict, register it in `FETCHERS`, then any competitor can declare `"source": "<provider>"`.
 
 ### What the scraper does NOT touch
 
@@ -142,16 +149,15 @@ To move a company between tiers, edit `src/data/competitors.json` — no code ch
 1. Run the scraper weekly: `python3 scripts/refresh_postings.py`
 2. Open the workbook and review the `Scraped — Pending Review` tab
 3. For each row: keep, edit (fix function/level), or delete
-4. Pay extra attention to rows where `function = Other` — those didn't match any of the six BUILD_SPEC functions and need manual classification
+4. Pay extra attention to rows where `function = Other` — those didn't match any of the six BUILD_SPEC functions (or Growth) and need manual classification
 5. Copy approved rows into the `Postings` tab (the one the app reads from)
-6. Glance at `Scraper Run Log` for any company with `status != ok` — that means their board is broken or moved off Greenhouse
+6. Glance at `Scraper Run Log` for any company with `status != ok` — that means their board is broken or moved off its SaaS provider
 
-### Companies NOT on Greenhouse
+### Companies NOT yet on a supported scraper
 
-These competitors run their public boards on different infrastructure and need separate scrapers in future phases:
+These competitors run their public boards on different infrastructure and need future scraper work:
 
-- **Ashby:** Ramp (Phase 1B)
-- **Workday / their own ATS:** Klarna, Coinbase, Plaid, DoorDash, Uber, Notion, OpenAI, Shopify, Bill.com, Wise, Revolut, TikTok/ByteDance, Etsy (Phase 1C+)
+- **Workday / their own ATS:** Klarna, Coinbase, Wealthfront, DoorDash, Uber, Shopify, Bill.com, Wise, Revolut, TikTok/ByteDance, Etsy, Scale AI, Rippling, Gusto, Carta, Modern Health (Phase 1C+ — Workday usually requires headless browser; custom ATSes are case-by-case)
 
 ## Adding a new role title to the dropdown
 

@@ -230,16 +230,23 @@ def classify_function(title: str) -> str:
 
 
 # =============================================================================
-# Greenhouse public-board fetcher
+# Public-board fetchers
 # =============================================================================
 #
-# Companies on Greenhouse expose their public job board at:
-#   https://boards-api.greenhouse.io/v1/boards/<slug>/jobs
-# No authentication required — this is the same data anyone visiting the
-# company's careers page sees in their browser. We're consuming the same
-# public data programmatically.
+# Each fetcher targets one SaaS-hosted public job board provider and
+# returns a *normalized* list of job dicts so the downstream classifier
+# stays source-agnostic. Normalized shape:
+#
+#     {"title": str, "location": str, "posted_date": str, "source_url": str}
+#
+# Companies expose their public boards through their SaaS provider:
+#   - Greenhouse: boards-api.greenhouse.io/v1/boards/<slug>/jobs
+#   - Ashby:      api.ashbyhq.com/posting-api/job-board/<slug>
+# No authentication required for either — we're consuming the same
+# public data anyone visiting the careers page sees in their browser.
 
 _GREENHOUSE_BOARD_URL = "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs"
+_ASHBY_BOARD_URL = "https://api.ashbyhq.com/posting-api/job-board/{slug}"
 _USER_AGENT = "affirm-talent-mapping-tool/1.0 (internal sourcer tool)"
 _REQUEST_TIMEOUT_SECONDS = 15
 
@@ -249,33 +256,114 @@ class FetchResult:
     """Outcome of fetching one competitor's job board."""
     slug: str
     name: str
+    source: str  # "greenhouse" | "ashby"
     status: str  # "ok" | "http_404" | "http_error" | "network_error" | "parse_error"
     total_jobs: int
     error_message: Optional[str] = None
 
 
+def _fetch_json(url: str) -> dict:
+    """Fetch and parse JSON. Raises on network/parse failures so the
+    per-source wrappers can translate them into FetchResult statuses."""
+    request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
+    with urllib.request.urlopen(request, timeout=_REQUEST_TIMEOUT_SECONDS) as response:
+        return json.load(response)
+
+
 def fetch_greenhouse_jobs(slug: str, name: str) -> Tuple[FetchResult, List[dict]]:
     """Pull all jobs from one Greenhouse-hosted competitor board.
 
-    Returns a (FetchResult, jobs) pair. On any failure the FetchResult
-    captures the cause and `jobs` is empty — the caller is expected to
-    log the failure and continue with the next company.
+    Returns a (FetchResult, normalized_jobs) pair. On any failure the
+    FetchResult captures the cause and the jobs list is empty.
     """
     url = _GREENHOUSE_BOARD_URL.format(slug=slug)
-    request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=_REQUEST_TIMEOUT_SECONDS) as response:
-            payload = json.load(response)
+        payload = _fetch_json(url)
     except urllib.error.HTTPError as exc:
         status = "http_404" if exc.code == 404 else "http_error"
-        return FetchResult(slug, name, status, 0, f"HTTP {exc.code}"), []
+        return FetchResult(slug, name, "greenhouse", status, 0, f"HTTP {exc.code}"), []
     except urllib.error.URLError as exc:
-        return FetchResult(slug, name, "network_error", 0, str(exc.reason)), []
+        return FetchResult(slug, name, "greenhouse", "network_error", 0, str(exc.reason)), []
     except Exception as exc:
-        return FetchResult(slug, name, "parse_error", 0, repr(exc)), []
+        return FetchResult(slug, name, "greenhouse", "parse_error", 0, repr(exc)), []
 
-    jobs = payload.get("jobs", []) or []
-    return FetchResult(slug, name, "ok", len(jobs), None), jobs
+    raw_jobs = payload.get("jobs", []) or []
+    # Normalize. first_published reflects when the role hit the market;
+    # updated_at shifts on any edit (recruiter changes, description
+    # tweaks) so it's noisier as a freshness signal.
+    normalized = [
+        {
+            "title": (j.get("title") or "").strip(),
+            "location": ((j.get("location") or {}).get("name") or ""),
+            "posted_date": (j.get("first_published") or "")[:10],
+            "source_url": j.get("absolute_url") or "",
+        }
+        for j in raw_jobs
+    ]
+    return FetchResult(slug, name, "greenhouse", "ok", len(raw_jobs), None), normalized
+
+
+def fetch_ashby_jobs(slug: str, name: str) -> Tuple[FetchResult, List[dict]]:
+    """Pull all jobs from one Ashby-hosted competitor board.
+
+    Ashby's posting API uses different field names than Greenhouse but
+    exposes the same public job data. Returns the same normalized shape
+    as fetch_greenhouse_jobs so downstream code is source-agnostic.
+    """
+    url = _ASHBY_BOARD_URL.format(slug=slug)
+    try:
+        payload = _fetch_json(url)
+    except urllib.error.HTTPError as exc:
+        status = "http_404" if exc.code == 404 else "http_error"
+        return FetchResult(slug, name, "ashby", status, 0, f"HTTP {exc.code}"), []
+    except urllib.error.URLError as exc:
+        return FetchResult(slug, name, "ashby", "network_error", 0, str(exc.reason)), []
+    except Exception as exc:
+        return FetchResult(slug, name, "ashby", "parse_error", 0, repr(exc)), []
+
+    raw_jobs = payload.get("jobs", []) or []
+    # Ashby exposes: title, location (string, not nested), publishedAt
+    # (full ISO timestamp), jobUrl (public posting URL). Also has
+    # secondaryLocations for multi-location postings — ignored for now;
+    # primary location only goes into normalized output.
+    normalized = [
+        {
+            "title": (j.get("title") or "").strip(),
+            "location": (j.get("location") or ""),
+            "posted_date": (j.get("publishedAt") or "")[:10],
+            "source_url": j.get("jobUrl") or "",
+        }
+        for j in raw_jobs
+    ]
+    return FetchResult(slug, name, "ashby", "ok", len(raw_jobs), None), normalized
+
+
+# Registry maps a source name → its fetcher function. Adding a new
+# source (Lever, Workday, custom) is one new entry here plus one new
+# fetch_* function — no other code needs to change.
+FETCHERS = {
+    "greenhouse": fetch_greenhouse_jobs,
+    "ashby": fetch_ashby_jobs,
+}
+
+
+def fetch_company_jobs(
+    slug: str,
+    name: str,
+    source: str,
+) -> Tuple[FetchResult, List[dict]]:
+    """Dispatch to the right fetcher for the given source.
+
+    Returns a (FetchResult with status='unknown_source', []) pair if the
+    source isn't registered, so the scraper can log it and continue.
+    """
+    fetcher = FETCHERS.get(source)
+    if fetcher is None:
+        return (
+            FetchResult(slug, name, source, "unknown_source", 0, f"No fetcher for source '{source}'"),
+            [],
+        )
+    return fetcher(slug, name)
 
 
 def classify_jobs(
@@ -283,12 +371,12 @@ def classify_jobs(
     company_name: str,
     tier: str,
 ) -> List[ClassifiedPosting]:
-    """Filter + classify raw Greenhouse jobs into ClassifiedPosting rows.
+    """Filter + classify normalized jobs into ClassifiedPosting rows.
 
-    Only jobs whose title matches the tier's allowed level filter are
-    returned. Function is best-effort — falls back to Engineering if no
-    keyword matches. Sourcers can correct any misclassification in the
-    Pending Review tab before promoting to Postings.
+    Operates on normalized job dicts (output of any fetcher in FETCHERS)
+    so this function is source-agnostic. Only jobs whose title matches
+    the tier's allowed level filter are returned. Function is best-
+    effort with an 'Other' fallback so misclassifications stay visible.
     """
     classified: List[ClassifiedPosting] = []
     for job in jobs:
@@ -299,12 +387,6 @@ def classify_jobs(
         if level is None:
             continue
         function = classify_function(raw_title)
-        location = (job.get("location") or {}).get("name", "") or ""
-        # first_published reflects when the role hit the market;
-        # updated_at can shift on any edit (recruiter changes,
-        # description tweaks) so it's noisier as a "freshness" signal.
-        posted_date = (job.get("first_published") or "")[:10]  # YYYY-MM-DD slice
-        source_url = job.get("absolute_url") or ""
         classified.append(
             ClassifiedPosting(
                 company=company_name,
@@ -312,9 +394,9 @@ def classify_jobs(
                 title=raw_title,
                 function=function,
                 level=level,
-                location=location,
-                posted_date=posted_date,
-                source_url=source_url,
+                location=job.get("location", "") or "",
+                posted_date=job.get("posted_date", "") or "",
+                source_url=job.get("source_url", "") or "",
                 tier=tier,
             )
         )
@@ -326,6 +408,7 @@ def classify_jobs(
 # =============================================================================
 
 _DEFAULT_CONFIG_PATH = Path(__file__).parent / "data" / "competitors.json"
+_DEFAULT_SOURCE = "greenhouse"  # back-compat for entries missing 'source'
 
 
 def load_competitor_config(
@@ -333,9 +416,17 @@ def load_competitor_config(
 ) -> Tuple[List[dict], List[dict]]:
     """Load the competitor tier config. Returns (primary_list, secondary_list).
 
-    Each entry in either list is a dict with 'slug' and 'name' keys.
+    Each entry has 'slug', 'name', and 'source' keys. Older entries
+    without 'source' default to greenhouse for back-compatibility.
     """
     path = config_path or _DEFAULT_CONFIG_PATH
     with open(path, "r") as f:
         cfg = json.load(f)
-    return cfg.get("primary", []), cfg.get("secondary", [])
+
+    def _normalize(entries: List[dict]) -> List[dict]:
+        return [
+            {**e, "source": e.get("source", _DEFAULT_SOURCE)}
+            for e in entries
+        ]
+
+    return _normalize(cfg.get("primary", [])), _normalize(cfg.get("secondary", []))

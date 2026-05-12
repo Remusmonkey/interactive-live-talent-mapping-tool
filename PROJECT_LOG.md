@@ -175,6 +175,59 @@ After the first live run, several "Other" rows turned out to be legitimate Growt
 
 ---
 
+### Session 5 — May 12, 2026 (Tue PM, continued)
+
+**Goal:** Merge Phase 1 to main, then ship Phase 1B (Ashby scraper for Ramp + other Ashby-hosted competitors).
+
+#### Phase 1 merged to main
+
+PR #6 squash-merged. `heather/phase-1-foundation` branch retired. Main now contains the Sheets backend + Greenhouse scraper.
+
+#### Phase 1B scope
+
+Reused the discovery probe pattern from Phase 1A — checked 28 candidate companies against the Ashby public API. Seven Ashby-hosted companies with active leadership postings:
+
+| Company | Source | Tier | Leadership matches |
+|---|---|---|---|
+| Ramp | ashby | primary | 3 |
+| OpenAI | ashby | secondary | 15 |
+| Harvey | ashby | secondary | 9 |
+| Notion | ashby | secondary | 5 |
+| Deel | ashby | secondary | 1 |
+| Plaid | ashby | secondary | 1 |
+| Perplexity | ashby | secondary | 0 |
+
+Ramp going into primary because it's the fourth named direct competitor from the original BUILD_SPEC Tier-1 list (Stripe, Brex, Ramp, Block).
+
+#### Architectural decision: source-agnostic classifier
+
+Rather than write a parallel `classify_ashby_jobs()` function, refactored both fetchers to return a **normalized job dict** shape (`title`, `location`, `posted_date`, `source_url`). The classifier now works on the normalized shape regardless of upstream API. Adding a new source (Lever, Workday) is one new `fetch_<source>_jobs()` function + one entry in the `FETCHERS` registry — no other code changes.
+
+#### What landed
+
+1. **`src/scraper.py`** — both fetchers now return normalized dicts. New `fetch_ashby_jobs()` mirrors `fetch_greenhouse_jobs()`. New `FETCHERS` registry maps source name → fetcher function. New `fetch_company_jobs(slug, name, source)` dispatch function. `FetchResult` now carries `source` for the run log.
+2. **`src/data/competitors.json`** — each entry now has a `source` field. Added Ramp to primary tier (ashby source); added 6 Ashby-hosted secondary-tier companies (Plaid, Deel, OpenAI, Notion, Harvey, Perplexity). Back-compat default: `source = "greenhouse"` if missing.
+3. **`scripts/refresh_postings.py`** — uses `fetch_company_jobs` dispatch. Added `source` columns to both `Scraped — Pending Review` (11 cols) and `Scraper Run Log` (9 cols) tabs so sourcers can see at a glance which boards their rows came from.
+4. **README** — refreshed tier + source tables, documented the steps to add a new SaaS provider.
+
+#### First live run with both sources
+
+- 32 companies probed (8 primary + 24 secondary)
+- All boards returned `ok` (zero failures across Greenhouse + Ashby)
+- 142 leadership postings written to Pending Review (up from 108 with Phase 1A alone — +34 from Ashby)
+- ~19 seconds end-to-end
+
+#### Bumps along the way
+
+- **Run Log schema shift.** Added a `source` column between `company` and `tier` mid-stream. Existing Phase 1A rows in the Run Log are still there but their columns are shifted relative to the new header. Sourcers mostly look at the latest run, so leaving it; if historical analysis matters later, do a one-time backfill.
+
+#### What's next
+
+- **Sourcer action:** triage the now-142-row Pending Review batch. Same workflow.
+- **Phase 1C candidate:** Workday and custom ATSes (Klarna, Coinbase, Shopify, DoorDash, Uber, Wealthfront, etc.). Workday usually requires headless browser (Playwright); custom ATSes are case-by-case. Substantially harder than Phase 1A + 1B.
+
+---
+
 ### Session 2 — May 7, 2026 (Thu AM)
 
 **Goal:** Sync to latest, see what changed overnight.
@@ -249,6 +302,8 @@ The `--prune` cleans up stale remote-tracking refs for branches that were delete
 | 2026-05-12 | Function classifier fallback is "Other," not "Engineering" | Engineering fallback would hide misclassifications. "Other" surfaces them honestly so sourcers know which rows need manual classification before promoting to Postings |
 | 2026-05-12 | Added Growth as a 7th classifier function (scraper-only, not BUILD_SPEC) | Several "Other" rows were legitimate Growth roles (Organic Growth, Growth Marketing, Integrated Campaigns). Sections 2-4 still show 6 functions until BUILD_SPEC is formally expanded |
 | 2026-05-12 | Growth placed AFTER Revenue/Product in classifier priority | Conservative — pure Growth titles fire as Growth, but mixed titles ("Head of Sales, Growth", "Director of Product, Growth/AI") stay with their primary function |
+| 2026-05-12 | Fetchers return normalized job dicts; classifier is source-agnostic | Adding a new SaaS provider (Lever, Workday) is one fetcher + one registry entry. No changes to classifier or main scraper script |
+| 2026-05-12 | Ramp moved to primary tier with Ashby source | Completes the original BUILD_SPEC Tier-1 direct-competitor list (Stripe, Brex, Ramp, Block). Now on the broad level filter |
 
 ---
 
@@ -261,9 +316,9 @@ The `--prune` cleans up stale remote-tracking refs for branches that were delete
 - [x] **Phase 1 open:** function classification tiebreaker policy when a title maps to multiple functions (e.g. "VP of Product Engineering") — *resolved: first-match-wins with documented priority order; "Other" fallback surfaces misses*
 - [ ] **Phase 1 open:** stale-posting rule — drop after 30 days? 60? When the company removes it?
 - [x] **Phase 1 open:** Google Sheets service account setup (needed for the scraper to write back to the workbook) — *resolved: service account upgraded to Editor on May 12; scraper runs end-to-end*
-- [ ] **Phase 1A:** sourcers run the first triage pass on the 108 scraped rows; refine which functions/levels need classifier tweaks
-- [ ] **Phase 1B candidate:** Ashby scraper for Ramp and any other Ashby-hosted competitors
-- [ ] **Phase 1C candidate:** Workday + custom-ATS scrapers for Klarna, Coinbase, Plaid, DoorDash, Uber, Notion, OpenAI, Shopify (harder — Workday usually requires headless browser)
+- [ ] **Phase 1A/1B:** sourcers run the first triage pass on the 142 scraped rows; refine which functions/levels need classifier tweaks
+- [x] **Phase 1B:** Ashby scraper for Ramp + 6 other Ashby-hosted competitors (OpenAI, Harvey, Notion, Deel, Plaid, Perplexity) — *resolved May 12; source-agnostic classifier added*
+- [ ] **Phase 1C candidate:** Workday + custom-ATS scrapers for Klarna, Coinbase, DoorDash, Uber, Shopify, Wealthfront, Wise, Bill.com (harder — Workday usually requires headless browser like Playwright)
 
 ---
 
