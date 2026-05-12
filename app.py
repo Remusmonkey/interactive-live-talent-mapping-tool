@@ -53,6 +53,35 @@ def _inject_montserrat() -> None:
     )
 
 
+def _hide_dataframe_column_menu() -> None:
+    """Hide the per-column 3-dot menu in st.dataframe widgets.
+
+    Streamlit decorates that menu (Sort, Pin, Hide, Filter) with Material
+    Symbols icons loaded from Google Fonts. On corporate networks where
+    fonts.gstatic.com is blocked or filtered, the icon font fails to load
+    and raw icon names render alongside the labels (e.g., "arrow upward
+    Sort ascending"). The 6-filter row above the postings table covers
+    filtering; clicking the column name still sorts. So hiding the
+    broken menu is a clean fallback.
+
+    Selectors target multiple known Streamlit versions; case-insensitive
+    matching makes the rule robust to internal class/test-id renames.
+    """
+    st.markdown(
+        """
+        <style>
+        [data-testid="stDataFrame"] button[aria-label*="column" i],
+        [data-testid="stDataFrame"] [data-testid*="ColumnMenu" i],
+        [data-testid="stDataFrame"] [class*="ColumnMenu" i],
+        [data-testid="stDataFrame"] [class*="column-menu" i] {
+            display: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def _data_as_of(data_dir: Path) -> date:
     """Return the most recent date across postings + comp benchmarks.
 
@@ -95,6 +124,7 @@ def main() -> None:
     )
 
     _inject_montserrat()
+    _hide_dataframe_column_menu()
 
     as_of = _data_as_of(DATA_DIR)
     st.markdown(
