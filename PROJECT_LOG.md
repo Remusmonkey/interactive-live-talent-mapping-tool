@@ -228,6 +228,44 @@ Rather than write a parallel `classify_ashby_jobs()` function, refactored both f
 
 ---
 
+### Session 6 — May 12, 2026 (Tue PM, continued)
+
+**Goal:** Triage and workflow refinement after first full Phase 1B scrape.
+
+#### Workflow gap discovered
+
+After the user said "we have triaged the 84 rows," Section 1 in the app still showed "No postings yet." Diagnosis: the original design had a manual promotion step — scraper writes to `Scraped — Pending Review`, sourcers manually copy approved rows to `Postings`, app reads `Postings`. The user (reasonably) expected triaging Pending Review to be enough.
+
+Inspected both tabs: Pending Review had 84 rows (all kept during triage); Postings had 0 rows (no manual copy happened). One-off fix: copied all 84 → Postings programmatically so Section 1 had data immediately.
+
+#### Workflow decision
+
+Three options surfaced:
+- **A. Promote script:** sourcers triage Pending Review then run `python scripts/promote_to_postings.py`. Keeps the review gate.
+- **B. Direct read:** Section 1 reads from Pending Review directly. No gate, no copy step. Sourcer edits/deletes show up immediately.
+- **C. Approval column:** add an `approved` column to Pending Review that the scraper preserves across runs. Best of both worlds but more code.
+
+**Sourcer chose Option B.** Reasoning: simplest mental model. What's in the tab is what shows up. Persistence across scrapes is a future work item — current behavior is "fresh scrape replaces the working set; sourcer re-triages each week."
+
+#### What landed
+
+1. `src/sections/competitive_landscape.py` now reads from `Scraped — Pending Review` directly. Projects to the 7 display columns (company, title, function, level, location, posted_date, source_url) regardless of upstream schema width.
+2. Caption updated to sourcer-provided wording: "Leadership roles currently posted on public job boards at Consumer Tech and FinTech companies. Scraped weekly from Greenhouse + Ashby."
+3. Empty-state message rewritten to point at the scraper script rather than the now-vestigial manual copy.
+4. Filter help text updated (no longer says "Tier 1 companies").
+5. README workflow guidance updated to reflect in-place triage in Pending Review; Postings tab no longer required.
+
+#### Postings tab status
+
+Not deleted from the workbook. Vestigial — Section 1 doesn't read it anymore. Possible future use: a manual-entry tab for competitors not yet on a supported scraper (Workday/custom ATSes in Phase 1C). For now, ignore.
+
+#### What's next
+
+- **Open work item:** persistence across scrapes. Sourcer triage resets each week. Options: approval column, denylist file, or sticky deletions tracked by source_url hash.
+- **Phase 1C candidate:** Workday + custom-ATS scrapers (Klarna, Coinbase, Shopify, DoorDash, Uber, Wealthfront, Wise, Bill.com).
+
+---
+
 ### Session 2 — May 7, 2026 (Thu AM)
 
 **Goal:** Sync to latest, see what changed overnight.
@@ -304,6 +342,7 @@ The `--prune` cleans up stale remote-tracking refs for branches that were delete
 | 2026-05-12 | Growth placed AFTER Revenue/Product in classifier priority | Conservative — pure Growth titles fire as Growth, but mixed titles ("Head of Sales, Growth", "Director of Product, Growth/AI") stay with their primary function |
 | 2026-05-12 | Fetchers return normalized job dicts; classifier is source-agnostic | Adding a new SaaS provider (Lever, Workday) is one fetcher + one registry entry. No changes to classifier or main scraper script |
 | 2026-05-12 | Ramp moved to primary tier with Ashby source | Completes the original BUILD_SPEC Tier-1 direct-competitor list (Stripe, Brex, Ramp, Block). Now on the broad level filter |
+| 2026-05-12 | Section 1 reads from `Scraped — Pending Review` directly (Option B) | Manual copy-to-Postings was a workflow gap that confused even the user who designed it. In-place triage matches the sourcer's mental model. Persistence across weekly scrapes is a future work item. |
 
 ---
 
@@ -319,6 +358,7 @@ The `--prune` cleans up stale remote-tracking refs for branches that were delete
 - [ ] **Phase 1A/1B:** sourcers run the first triage pass on the 142 scraped rows; refine which functions/levels need classifier tweaks
 - [x] **Phase 1B:** Ashby scraper for Ramp + 6 other Ashby-hosted competitors (OpenAI, Harvey, Notion, Deel, Plaid, Perplexity) — *resolved May 12; source-agnostic classifier added*
 - [ ] **Phase 1C candidate:** Workday + custom-ATS scrapers for Klarna, Coinbase, DoorDash, Uber, Shopify, Wealthfront, Wise, Bill.com (harder — Workday usually requires headless browser like Playwright)
+- [ ] **Section 1 persistence:** sourcer triage in Pending Review currently doesn't persist across weekly scrapes. Options: approval column, denylist file, or sticky deletions tracked by source_url. Decide and implement before this becomes a friction point
 
 ---
 

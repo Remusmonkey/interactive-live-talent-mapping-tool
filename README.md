@@ -55,12 +55,14 @@ Two paths exist depending on whether the Google Sheets backend is set up yet:
 
 1. Open the shared workbook `Talent Mapping Tool — Live Data` in Google Sheets (link in team Slack).
 2. Edit the relevant tab:
-   - `Postings` — Section 1 competitor postings (one row per posting)
+   - `Scraped — Pending Review` — Section 1 competitor postings (auto-populated by the scraper; sourcers triage by deleting unwanted rows or editing function/level/title directly)
    - `Industry Signals` — Section 1 news/signals panel (title + body)
 3. Save (auto-saves).
 4. Refresh the running app in your browser. New data appears within 5 minutes (caching window).
 
-No git, no command line. The app reads from the published Sheet URL on a 5-minute cache.
+No git, no command line. The app reads from the Sheet on a 5-minute cache.
+
+**Workflow note (Section 1):** Section 1 reads directly from the `Scraped — Pending Review` tab. Triage in-place by deleting bad rows or editing function/level/title — whatever's in the tab is what stakeholders see. The weekly scraper run fully refreshes the tab, so sourcer edits/deletes don't persist across scrapes (a known tradeoff; persistence is a future work item).
 
 ### Path B — Local CSVs (fallback)
 
@@ -85,9 +87,10 @@ This is a one-time setup that connects the app to a shared Google Sheet so the d
 ### Steps
 
 1. **Create the workbook** in Google Sheets. Name it `Talent Mapping Tool — Live Data`.
-2. **Add two tabs to start:**
-   - `Postings` — headers: `company, title, function, level, location, posted_date, source_url` (header case doesn't matter; the app normalizes to lowercase)
+2. **Add one tab to start:**
    - `Industry Signals` — headers: `title, body`
+
+   The scraper auto-creates `Scraped — Pending Review` and `Scraper Run Log` tabs on first run. Section 1 reads from `Scraped — Pending Review` directly.
 3. **Share the workbook** with the data partner as an editor.
 4. **Create a Google Cloud project + service account:**
    - Open [console.cloud.google.com](https://console.cloud.google.com)
@@ -141,17 +144,16 @@ To **add a new SaaS provider** (e.g., Lever, Workday), see the dev guide in `src
 ### What the scraper does NOT touch
 
 - Affirm's internal Greenhouse ATS (this targets *competitors'* public boards, hosted on Greenhouse the SaaS)
-- The `Postings` tab — sourcers manually promote approved rows from Pending Review after triage
 - Compensation, talent pool, or any data outside Section 1
 
 ### Triage workflow (sourcer)
 
 1. Run the scraper weekly: `python3 scripts/refresh_postings.py`
-2. Open the workbook and review the `Scraped — Pending Review` tab
-3. For each row: keep, edit (fix function/level), or delete
-4. Pay extra attention to rows where `function = Other` — those didn't match any of the six BUILD_SPEC functions (or Growth) and need manual classification
-5. Copy approved rows into the `Postings` tab (the one the app reads from)
-6. Glance at `Scraper Run Log` for any company with `status != ok` — that means their board is broken or moved off its SaaS provider
+2. Open the workbook and review the `Scraped — Pending Review` tab — this is what stakeholders see in Section 1 of the app
+3. For each row: keep, edit (fix function/level/title in-place), or delete the row
+4. Glance at `Scraper Run Log` for any company with `status != ok` — that means their board is broken or moved off its SaaS provider
+
+Heads-up: the weekly scraper run fully refreshes the `Scraped — Pending Review` tab, so deletions/edits don't persist across runs. Re-triage after each weekly scrape. Persistence is a future work item.
 
 ### Companies NOT yet on a supported scraper
 
