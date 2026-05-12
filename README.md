@@ -104,6 +104,55 @@ This is a one-time setup that connects the app to a shared Google Sheet so the d
 
 If the caption still says `Local CSV`, the app couldn't reach the Sheet — most common causes are missing/incorrect column headers (see step 2), the JSON key file not being in the right place, or the service account not having been shared on the Sheet (step 6).
 
+## Refreshing competitor postings (Phase 1A scraper)
+
+The Phase 1A scraper pulls leadership postings (Director, Head of, Senior Director, VP, SVP) from 25 competitor public job boards hosted on Greenhouse infrastructure. It's manually triggered — no schedule, no live scraping during page load.
+
+### Running it
+
+```bash
+# From the repo root, with the Google Sheets service account configured (see above)
+python3 scripts/refresh_postings.py
+```
+
+Takes ~20 seconds. Writes to two tabs in your workbook (auto-created on first run):
+
+- **`Scraped — Pending Review`** — every leadership posting found. Sourcers triage here.
+- **`Scraper Run Log`** — one row per company per run with counts + any errors. Useful for spotting board breakage.
+
+### Tier-based filtering
+
+The scraper applies different level filters depending on each competitor's tier (defined in `src/data/competitors.json`):
+
+| Tier | Companies | Level filter |
+|---|---|---|
+| **primary** | Stripe, Brex, Block, Sezzle, SoFi, Adyen, Mercury | Director, Senior Director, Head of, VP, SVP |
+| **secondary** | Marqeta, Robinhood, Chime, Betterment, Checkr, N26, Nubank, Anthropic, Figma, Asana, Discord, Reddit, Pinterest, Airbnb, Instacart, Lyft, Roblox, Duolingo | Senior Director, Head of, VP, SVP (skip plain Director — too many IC titles at consumer tech) |
+
+To move a company between tiers, edit `src/data/competitors.json` — no code change needed.
+
+### What the scraper does NOT touch
+
+- Affirm's internal Greenhouse ATS (this targets *competitors'* public boards, hosted on Greenhouse the SaaS)
+- The `Postings` tab — sourcers manually promote approved rows from Pending Review after triage
+- Compensation, talent pool, or any data outside Section 1
+
+### Triage workflow (sourcer)
+
+1. Run the scraper weekly: `python3 scripts/refresh_postings.py`
+2. Open the workbook and review the `Scraped — Pending Review` tab
+3. For each row: keep, edit (fix function/level), or delete
+4. Pay extra attention to rows where `function = Other` — those didn't match any of the six BUILD_SPEC functions and need manual classification
+5. Copy approved rows into the `Postings` tab (the one the app reads from)
+6. Glance at `Scraper Run Log` for any company with `status != ok` — that means their board is broken or moved off Greenhouse
+
+### Companies NOT on Greenhouse
+
+These competitors run their public boards on different infrastructure and need separate scrapers in future phases:
+
+- **Ashby:** Ramp (Phase 1B)
+- **Workday / their own ATS:** Klarna, Coinbase, Plaid, DoorDash, Uber, Notion, OpenAI, Shopify, Bill.com, Wise, Revolut, TikTok/ByteDance, Etsy (Phase 1C+)
+
 ## Adding a new role title to the dropdown
 
 Role titles live in `src/sections/sourcing_engine.py` (constant `DROPDOWN_TITLES` — added when Section 4 is built). To add one:

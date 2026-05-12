@@ -120,6 +120,54 @@ Full plan with phasing, decisions, and todos lives in `.cursor/plans/real_data_p
 
 ---
 
+### Session 4 — May 12, 2026 (Tue PM, continued)
+
+**Goal:** Ship Phase 1A — the Greenhouse public-board scraper.
+
+#### Mid-build scope expansion
+
+The original plan was a scraper for 4 named competitors (Stripe, Brex, Ramp, Block). Mid-build, the scope expanded to also cover the broader Consumer Tech + Fintech landscape. A discovery probe across 44 candidates produced concrete data: 25 are on Greenhouse with active leadership postings; 13 use different infrastructure (Ashby, Workday, custom). Ramp turned out to be on Ashby, not Greenhouse — moved to Phase 1B.
+
+#### Two design decisions resolved mid-build
+
+| Decision | Choice | Why |
+|---|---|---|
+| Level filter strictness | Phase 1A scope expanded to Director + Head + SD + VP + SVP, not just SD/VP/SVP as originally specced | Probe data showed competitors essentially never post SD/VP roles publicly — 23 hits across 879 jobs under strict filter. Senior leadership hires through retained search. Broader filter captures what's actually published (177 hits). |
+| Tier-based filtering | Option C — broad filter for direct competitors, narrower filter (Head/SD/VP only) for the broader Consumer Tech + Fintech list | Sourcers care more about Director-level signal from direct payments/BNPL competitors than from consumer tech where "Director" often means senior IC (Art Director, Account Director). Tier config in `src/data/competitors.json` so re-tiering is one file edit, not a code change. |
+
+#### What landed in this session
+
+1. **`src/scraper.py`** — new module with all shared scraping primitives:
+   - `classify_level(title, tier)` — tier-aware level regex matcher; returns canonical unabbreviated form
+   - `classify_function(title)` — keyword-based mapping to one of the 6 BUILD_SPEC functions, with a 7th "Other" bucket for unclassifiable titles
+   - `fetch_greenhouse_jobs(slug, name)` — pulls one company's public board with per-company error handling
+   - `classify_jobs()` — composes the above into `ClassifiedPosting` records
+   - `load_competitor_config()` — reads tier assignments from JSON
+2. **`src/data/competitors.json`** — 7 primary + 18 secondary competitors. Editable without touching code.
+3. **`scripts/refresh_postings.py`** — runnable entrypoint that auto-creates two new Sheet tabs (`Scraped — Pending Review`, `Scraper Run Log`), wipes + rewrites Pending Review each run, and appends one log row per company.
+4. **`src/sheets.py`** — added write-capable helpers (`open_workbook_for_writing`, `get_or_create_worksheet`, `append_rows`, `replace_data_rows`). Read scope and write scope are separate so the Streamlit app stays read-only by default.
+5. README updated with the scraper usage guide and the list of companies still on non-Greenhouse infrastructure.
+
+#### First live run (production)
+
+- 25 companies probed, all returned status `ok` (zero board failures)
+- 108 leadership postings classified and written to Pending Review tab
+- Split: 59 primary + 49 secondary
+- Level breakdown: 52 Head of, 33 Director, 17 Senior Director, 6 VP, 0 SVP (matches the "senior leadership doesn't post publicly" pattern)
+- Function breakdown: 50 Other, 19 Revenue, 16 Product, 10 Operations, 8 Finance, 5 Engineering — the high "Other" count (46%) is honest signal, not a bug, and tells sourcers exactly which rows need manual classification
+
+#### Bumps along the way
+
+- **First run hit `403 Caller does not have permission`** because the service account was still Viewer from the Session 3 setup. Bumping to Editor fixed it. Documented this gotcha in the scraper setup instructions.
+- **Engineering fallback was misleading.** First version of the function classifier defaulted to "Engineering" when no keyword matched. Sheriff flagged this — sourcers would see 55 Engineering rows and assume the classifier was working when half were Marketing/Comms/Legal/HR titles. Changed fallback to "Other" — now sourcers can see exactly which rows need manual triage at a glance.
+
+#### What's next
+
+- **User action (sourcers):** triage the first batch of 108 rows in the `Scraped — Pending Review` tab. Keep, edit, or delete each. Copy approved rows into the `Postings` tab. Pay extra attention to `function = Other` rows.
+- **Code owner action:** evaluate Phase 1B candidate — Ashby scraper for Ramp (and any other Ashby-hosted competitors discovered later). Same shape as Phase 1A: fetch → classify → write to Pending Review.
+
+---
+
 ### Session 2 — May 7, 2026 (Thu AM)
 
 **Goal:** Sync to latest, see what changed overnight.
@@ -188,6 +236,10 @@ The `--prune` cleans up stale remote-tracking refs for branches that were delete
 | 2026-05-12 | First "real data" problem area is Section 1 (competitor postings) | Most automatable section + highest stakeholder visibility + sets up the Sheets backend other sections will reuse |
 | 2026-05-12 | Scrapers first, no manual hand-curation baseline | "Time isn't an issue; get the tool right" — no throw-away work |
 | 2026-05-12 | Google Sheets auth: service account, not publish-to-web | Affirm Workspace restricts publish-to-web to Affirm-only; service account is the standard enterprise pattern and works regardless of publish-to-web policy |
+| 2026-05-12 | Phase 1A scope expanded from 4 named competitors to 25 Greenhouse-hosted Consumer Tech + Fintech companies | Probe revealed direct competitors barely post leadership roles publicly; broadening the company list gives meaningful signal volume |
+| 2026-05-12 | Level filter relaxed from BUILD_SPEC strict (SD/VP/SVP) to include Director + Head of | 23 hits vs 177 hits across 879 candidate jobs — strict filter would produce a near-empty tool that looks broken on first run |
+| 2026-05-12 | Two-tier filter: broad for direct competitors, narrower for the broader Consumer Tech + Fintech list | Pragmatic compromise — direct competitor Director signal is valuable; consumer-tech "Director" titles are too often senior IC to be useful as leadership signal |
+| 2026-05-12 | Function classifier fallback is "Other," not "Engineering" | Engineering fallback would hide misclassifications. "Other" surfaces them honestly so sourcers know which rows need manual classification before promoting to Postings |
 
 ---
 
@@ -197,9 +249,12 @@ The `--prune` cleans up stale remote-tracking refs for branches that were delete
 - [x] Establish the formula combining the 2 difficulty inputs into low/medium/high — *resolved: tertile bucket sum, locked in BUILD_SPEC.md*
 - [ ] Decide whether contributor branches should be auto-deleted on PR merge (GitHub setting)
 - [ ] **Phase 1 open:** where does the app run for stakeholder access? (local + Notion publish vs Streamlit Community Cloud vs internal Affirm hosting)
-- [ ] **Phase 1 open:** function classification tiebreaker policy when a title maps to multiple functions (e.g. "VP of Product Engineering")
+- [x] **Phase 1 open:** function classification tiebreaker policy when a title maps to multiple functions (e.g. "VP of Product Engineering") — *resolved: first-match-wins with documented priority order; "Other" fallback surfaces misses*
 - [ ] **Phase 1 open:** stale-posting rule — drop after 30 days? 60? When the company removes it?
-- [ ] **Phase 1 open:** Google Sheets service account setup (needed for the scraper to write back to the workbook)
+- [x] **Phase 1 open:** Google Sheets service account setup (needed for the scraper to write back to the workbook) — *resolved: service account upgraded to Editor on May 12; scraper runs end-to-end*
+- [ ] **Phase 1A:** sourcers run the first triage pass on the 108 scraped rows; refine which functions/levels need classifier tweaks
+- [ ] **Phase 1B candidate:** Ashby scraper for Ramp and any other Ashby-hosted competitors
+- [ ] **Phase 1C candidate:** Workday + custom-ATS scrapers for Klarna, Coinbase, Plaid, DoorDash, Uber, Notion, OpenAI, Shopify (harder — Workday usually requires headless browser)
 
 ---
 

@@ -1,0 +1,32 @@
+{
+  "_comment": "Competitor list for the Phase 1A Greenhouse scraper. Each entry has a slug (the Greenhouse board path: boards-api.greenhouse.io/v1/boards/<slug>/jobs), a display name, and a tier. Tier governs how aggressively the scraper filters titles: 'primary' uses a broad filter (Director + Head + Senior Director + VP + SVP); 'secondary' uses a narrower filter (Head + Senior Director + VP + SVP) — plain Director skipped because consumer tech companies use it for senior IC roles. Move a company between tiers by editing its 'tier' value here. No code change needed.",
+  "primary": [
+    {"slug": "stripe", "name": "Stripe"},
+    {"slug": "brex", "name": "Brex"},
+    {"slug": "block", "name": "Block"},
+    {"slug": "sezzle", "name": "Sezzle"},
+    {"slug": "sofi", "name": "SoFi"},
+    {"slug": "adyen", "name": "Adyen"},
+    {"slug": "mercury", "name": "Mercury"}
+  ],
+  "secondary": [
+    {"slug": "marqeta", "name": "Marqeta"},
+    {"slug": "robinhood", "name": "Robinhood"},
+    {"slug": "chime", "name": "Chime"},
+    {"slug": "betterment", "name": "Betterment"},
+    {"slug": "checkr", "name": "Checkr"},
+    {"slug": "n26", "name": "N26"},
+    {"slug": "nubank", "name": "Nubank"},
+    {"slug": "anthropic", "name": "Anthropic"},
+    {"slug": "figma", "name": "Figma"},
+    {"slug": "asana", "name": "Asana"},
+    {"slug": "discord", "name": "Discord"},
+    {"slug": "reddit", "name": "Reddit"},
+    {"slug": "pinterest", "name": "Pinterest"},
+    {"slug": "airbnb", "name": "Airbnb"},
+    {"slug": "instacart", "name": "Instacart"},
+    {"slug": "lyft", "name": "Lyft"},
+    {"slug": "roblox", "name": "Roblox"},
+    {"slug": "duolingo", "name": "Duolingo"}
+  ]
+}
