@@ -1,18 +1,24 @@
 """Section 1 — Competitive Landscape.
 
-Renders, for each Tier 1 company, a table of currently posted Senior Director,
-Vice President, and Senior Vice President roles plus a curated "Industry
-Signals" panel that mixes Tier 1 hiring trends with broader fintech industry
-news.
+Renders a filterable table of leadership-level postings (Director, Senior
+Director, Head of, VP, SVP) currently posted on public job boards at the
+32 Consumer Tech + Fintech companies tracked in src/data/competitors.json.
+Plus a curated "Industry Signals" panel for hiring trends and market news.
+
+Workflow note: Section 1 reads directly from the 'Scraped — Pending Review'
+tab — the scraper output IS the source of truth for display. Sourcers
+triage in-place by deleting unwanted rows or editing function/level/title;
+those changes show up in the app on the next cache refresh (5 min).
+
+This means weekly scraper runs wipe sourcer edits since Pending Review is
+fully refreshed each run. That's a known tradeoff — see PROJECT_LOG.md
+Session 6 for the workflow decision and the persistence work item.
 
 Data sources (in priority order):
   1. Google Sheets via service account — workbook ID + key file in .env.
-     Live data; reads tabs "Postings" and "Industry Signals".
-  2. data/competitor_postings.csv + data/insights.json. Fallback when Sheets
-     is unconfigured or unreachable. May be stale.
-
-A short cache (5 min) so the app doesn't re-fetch on every interaction but
-edits in the Sheet show up without manual reload.
+     Reads 'Scraped — Pending Review' and 'Industry Signals'.
+  2. data/competitor_postings.csv + data/insights.json. Fallback when
+     Sheets is unconfigured or unreachable. May be stale.
 """
 
 from __future__ import annotations
@@ -27,7 +33,9 @@ import streamlit as st
 from src import sheets
 
 
-_POSTINGS_REQUIRED_COLUMNS = {"company", "title", "function", "level", "location", "posted_date"}
+_POSTINGS_TAB = "Scraped — Pending Review"
+_POSTINGS_DISPLAY_COLUMNS = ["company", "title", "function", "level", "location", "posted_date", "source_url"]
+_POSTINGS_REQUIRED_COLUMNS = set(_POSTINGS_DISPLAY_COLUMNS) - {"source_url"}
 _INSIGHTS_REQUIRED_COLUMNS = {"title", "body"}
 
 
@@ -35,13 +43,15 @@ _INSIGHTS_REQUIRED_COLUMNS = {"title", "body"}
 def _load_postings(csv_path: str) -> Tuple[pd.DataFrame, str]:
     """Return (postings dataframe, source label) for the data-source badge.
 
-    Uses Sheets when the tab has the expected header columns, even if no
-    data rows exist yet. Falls back to local CSV when the Sheet is
-    unreachable or doesn't have the right schema.
+    Reads from the 'Scraped — Pending Review' tab — the scraper output
+    is the source of truth for display. Falls back to local CSV when the
+    Sheet is unreachable or doesn't have the expected schema. Projects
+    to display columns regardless of upstream schema width (the tab has
+    extra columns like raw_title/tier/source that aren't user-facing).
     """
-    df = sheets.read_tab_as_dataframe("Postings")
+    df = sheets.read_tab_as_dataframe(_POSTINGS_TAB)
     if df is not None and _POSTINGS_REQUIRED_COLUMNS.issubset(df.columns):
-        return df, "Google Sheets"
+        return df[[c for c in _POSTINGS_DISPLAY_COLUMNS if c in df.columns]], "Google Sheets"
     return pd.read_csv(csv_path), "Local CSV"
 
 
@@ -61,15 +71,16 @@ def _load_insights(json_path: str) -> Tuple[list[dict], str]:
 def render(data_dir: Path) -> None:
     st.header("Competitive Landscape")
     st.caption(
-        "Senior Director, Vice President, and Senior Vice President roles posted at Tier 1 fintech competitors "
-        "(Stripe, Block, Brex, Ramp, Wise, Adyen, Revolut)."
+        "Leadership roles currently posted on public job boards at Consumer Tech "
+        "and FinTech companies. Scraped weekly from Greenhouse + Ashby."
     )
 
     postings, postings_source = _load_postings(str(data_dir / "competitor_postings.csv"))
     if postings.empty:
         st.info(
-            "No postings yet — the Google Sheets Postings tab is empty. "
-            "The scraper will populate it once Phase 1A lands."
+            "No postings showing yet — the 'Scraped — Pending Review' tab is empty. "
+            "Run the scraper from the repo root with "
+            "`python scripts/refresh_postings.py` to populate it."
         )
         st.caption(f"Source: {postings_source}.")
         st.divider()
@@ -82,7 +93,7 @@ def render(data_dir: Path) -> None:
         "Filter by company",
         options=companies,
         default=companies,
-        help="Hide or show specific Tier 1 companies. All shown by default.",
+        help="Hide or show specific companies. All shown by default.",
     )
 
     filtered = postings[postings["company"].isin(selected)].sort_values(
