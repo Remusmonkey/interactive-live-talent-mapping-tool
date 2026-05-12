@@ -24,6 +24,7 @@ Data sources (in priority order):
 from __future__ import annotations
 
 import json
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Tuple
 
@@ -88,15 +89,7 @@ def render(data_dir: Path) -> None:
         return
     postings["posted_date"] = pd.to_datetime(postings["posted_date"], errors="coerce").dt.date
 
-    companies = sorted(postings["company"].unique())
-    selected = st.multiselect(
-        "Filter by company",
-        options=companies,
-        default=companies,
-        help="Hide or show specific companies. All shown by default.",
-    )
-
-    filtered = postings[postings["company"].isin(selected)].sort_values(
+    filtered = _apply_column_filters(postings).sort_values(
         ["company", "posted_date"], ascending=[True, False]
     )
 
@@ -111,6 +104,7 @@ def render(data_dir: Path) -> None:
             "level": st.column_config.TextColumn("Level"),
             "location": st.column_config.TextColumn("Location"),
             "posted_date": st.column_config.DateColumn("Posted"),
+            "source_url": st.column_config.LinkColumn("Posting", display_text="Open"),
         },
     )
 
@@ -121,6 +115,80 @@ def render(data_dir: Path) -> None:
 
     st.divider()
     _render_industry_signals(data_dir)
+
+
+_POSTED_WITHIN_OPTIONS = {
+    "All time": None,
+    "Last 7 days": 7,
+    "Last 14 days": 14,
+    "Last 30 days": 30,
+    "Last 60 days": 60,
+    "Last 90 days": 90,
+}
+
+
+def _apply_column_filters(df: pd.DataFrame) -> pd.DataFrame:
+    """Render per-column filter widgets and return the filtered dataframe.
+
+    Filters combine with AND logic. Defaults are 'show everything' so
+    the table is fully visible on first render and each filter
+    progressively narrows it. Empty multiselect = show all (treated as
+    'no filter' rather than 'no rows').
+    """
+    # Row 1: low-cardinality, high-value categorical filters
+    col_company, col_function, col_level = st.columns(3)
+    with col_company:
+        companies = sorted(df["company"].dropna().unique())
+        company_sel = st.multiselect(
+            "Company", options=companies, default=[], placeholder="All companies",
+        )
+    with col_function:
+        functions = sorted(df["function"].dropna().unique())
+        function_sel = st.multiselect(
+            "Function", options=functions, default=[], placeholder="All functions",
+        )
+    with col_level:
+        levels = sorted(df["level"].dropna().unique())
+        level_sel = st.multiselect(
+            "Level", options=levels, default=[], placeholder="All levels",
+        )
+
+    # Row 2: location (high-cardinality), title (free-text), date window
+    col_location, col_title, col_date = st.columns(3)
+    with col_location:
+        locations = sorted(df["location"].dropna().unique())
+        location_sel = st.multiselect(
+            "Location", options=locations, default=[], placeholder="All locations",
+        )
+    with col_title:
+        title_search = st.text_input(
+            "Title contains",
+            value="",
+            placeholder="e.g. Product, Sales, Engineer",
+        )
+    with col_date:
+        posted_within = st.selectbox(
+            "Posted within",
+            options=list(_POSTED_WITHIN_OPTIONS.keys()),
+            index=0,
+        )
+
+    out = df
+    if company_sel:
+        out = out[out["company"].isin(company_sel)]
+    if function_sel:
+        out = out[out["function"].isin(function_sel)]
+    if level_sel:
+        out = out[out["level"].isin(level_sel)]
+    if location_sel:
+        out = out[out["location"].isin(location_sel)]
+    if title_search.strip():
+        out = out[out["title"].str.contains(title_search.strip(), case=False, na=False)]
+    days = _POSTED_WITHIN_OPTIONS[posted_within]
+    if days is not None:
+        cutoff = date.today() - timedelta(days=days)
+        out = out[out["posted_date"].apply(lambda d: isinstance(d, date) and d >= cutoff)]
+    return out
 
 
 def _render_industry_signals(data_dir: Path) -> None:
