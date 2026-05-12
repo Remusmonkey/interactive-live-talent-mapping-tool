@@ -58,6 +58,17 @@ from src.scraper import (  # noqa: E402
 PENDING_REVIEW_TAB = "Scraped — Pending Review"
 RUN_LOG_TAB = "Scraper Run Log"
 
+# Drop rows the classifier couldn't categorize (function="Other") before
+# writing Pending Review. Sourcers don't want them in the triage tab —
+# most are noise (Marketing, Comms, Legal, Art Director). The count of
+# skipped rows is printed in each run summary so sudden spikes (which
+# would indicate a classifier blind spot) stay visible.
+#
+# Flip to False if you want to see Other rows again, or split this into
+# a per-tier toggle if the noise level differs (it likely will if more
+# consumer-tech companies get added).
+SKIP_OTHER_FUNCTION = True
+
 PENDING_REVIEW_HEADERS = [
     "scraped_at",
     "company",
@@ -215,6 +226,19 @@ def main() -> int:
     print(f"  Primary:   {len(primary_postings)}")
     print(f"  Secondary: {len(secondary_postings)}")
     print()
+
+    # Drop function=Other rows from the Pending Review tab so sourcers
+    # don't have to scroll past Marketing/Comms/Legal/Art Director noise.
+    # The total count is still in the run summary above; the gap tells
+    # sourcers how many were skipped at a glance.
+    if SKIP_OTHER_FUNCTION:
+        before_filter = len(all_postings)
+        all_postings = [(p, s) for p, s in all_postings if p.function != "Other"]
+        skipped_other = before_filter - len(all_postings)
+        print(f"Skipped {skipped_other} rows with function=Other "
+              f"(SKIP_OTHER_FUNCTION=True). "
+              f"{len(all_postings)} rows will land in Pending Review.")
+        print()
 
     # Write Pending Review (full refresh — wipe + rewrite each run so
     # stale postings don't accumulate week-over-week).
