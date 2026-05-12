@@ -1,15 +1,17 @@
-"""Phase 1A scraper — fetch leadership postings from competitor public
-job boards hosted on Greenhouse infrastructure.
+"""Competitor postings scraper — Phase 1A + 1B.
 
 What this script does:
-  1. Reads the competitor list from src/data/competitors.json (tiered:
-     primary = direct competitors, broad filter; secondary = adjacent
-     Consumer Tech + Fintech, narrower filter).
-  2. Hits boards-api.greenhouse.io for each company.
-  3. Filters titles to leadership levels per tier (see src/scraper.py).
-  4. Classifies each match into one of six BUILD_SPEC functions.
-  5. Writes the full result set to the 'Scraped — Pending Review' tab in
-     the configured Google Sheet (auto-created if missing). Sourcers
+  1. Reads the competitor list from src/data/competitors.json. Each
+     entry declares its source (greenhouse | ashby) and tier (primary
+     for direct competitors → broad level filter; secondary for the
+     adjacent Consumer Tech + Fintech landscape → narrower filter).
+  2. Dispatches each company to the appropriate fetcher via the
+     FETCHERS registry in src/scraper.py.
+  3. Filters titles to leadership levels per tier.
+  4. Classifies each match into one of seven functions (6 BUILD_SPEC
+     functions + Growth; "Other" for titles that don't match any).
+  5. Writes the full result set to the 'Scraped — Pending Review' tab
+     in the configured Google Sheet (auto-created if missing). Sourcers
      triage there and copy approved rows to the 'Postings' tab.
   6. Appends a row-per-company to the 'Scraper Run Log' tab with
      counts + errors so we can spot board breakage week-over-week.
@@ -18,6 +20,15 @@ What this script does NOT do:
   - Touch Affirm's internal Greenhouse ATS or any candidate data.
   - Write to the 'Postings' tab — sourcers promote rows manually.
   - Run on a schedule. Invoked manually: `python scripts/refresh_postings.py`.
+
+Adding a new SaaS-hosted competitor:
+  - One JSON entry in competitors.json with the right source. Done.
+
+Adding a new SaaS provider (e.g., Lever):
+  - One new fetch_<provider>_jobs() function in src/scraper.py returning
+    the normalized job dict shape.
+  - One new entry in the FETCHERS registry.
+  - No changes here.
 
 Exit code: 0 on success (even if some boards failed individually);
 non-zero only on hard config or auth failures.
@@ -39,7 +50,7 @@ from src.scraper import (  # noqa: E402
     ClassifiedPosting,
     FetchResult,
     classify_jobs,
-    fetch_greenhouse_jobs,
+    fetch_company_jobs,
     load_competitor_config,
 )
 
@@ -47,9 +58,21 @@ from src.scraper import (  # noqa: E402
 PENDING_REVIEW_TAB = "Scraped — Pending Review"
 RUN_LOG_TAB = "Scraper Run Log"
 
+# Drop rows the classifier couldn't categorize (function="Other") before
+# writing Pending Review. Sourcers don't want them in the triage tab —
+# most are noise (Marketing, Comms, Legal, Art Director). The count of
+# skipped rows is printed in each run summary so sudden spikes (which
+# would indicate a classifier blind spot) stay visible.
+#
+# Flip to False if you want to see Other rows again, or split this into
+# a per-tier toggle if the noise level differs (it likely will if more
+# consumer-tech companies get added).
+SKIP_OTHER_FUNCTION = True
+
 PENDING_REVIEW_HEADERS = [
     "scraped_at",
     "company",
+    "source",
     "tier",
     "function",
     "level",
@@ -64,6 +87,7 @@ RUN_LOG_HEADERS = [
     "run_id",
     "scraped_at",
     "company",
+    "source",
     "tier",
     "status",
     "total_jobs",
@@ -80,10 +104,15 @@ def _run_id() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
 
 
-def _posting_to_row(posting: ClassifiedPosting, scraped_at: str) -> List[str]:
+def _posting_to_row(
+    posting: ClassifiedPosting,
+    scraped_at: str,
+    source: str,
+) -> List[str]:
     return [
         scraped_at,
         posting.company,
+        source,
         posting.tier,
         posting.function,
         posting.level,
@@ -106,6 +135,7 @@ def _run_log_row(
         run_id,
         scraped_at,
         result.name,
+        result.source,
         tier,
         result.status,
         str(result.total_jobs),
@@ -119,18 +149,20 @@ def _scrape_one_tier(
     tier: str,
     scraped_at: str,
     run_id: str,
-) -> Tuple[List[ClassifiedPosting], List[List[str]]]:
-    """Scrape every company in one tier. Returns (postings, run_log_rows)."""
-    all_postings: List[ClassifiedPosting] = []
+) -> Tuple[List[Tuple[ClassifiedPosting, str]], List[List[str]]]:
+    """Scrape every company in one tier. Returns ((postings, source), log_rows)."""
+    all_postings: List[Tuple[ClassifiedPosting, str]] = []
     run_log_rows: List[List[str]] = []
     for entry in companies:
         slug = entry["slug"]
         name = entry["name"]
-        print(f"  [{tier}] {name} ({slug})...", end=" ", flush=True)
-        result, jobs = fetch_greenhouse_jobs(slug, name)
+        source = entry["source"]
+        print(f"  [{tier}/{source}] {name} ({slug})...", end=" ", flush=True)
+        result, jobs = fetch_company_jobs(slug, name, source)
         if result.status == "ok":
             postings = classify_jobs(jobs, name, tier=tier)
-            all_postings.extend(postings)
+            for p in postings:
+                all_postings.append((p, source))
             print(f"OK — {result.total_jobs} total, {len(postings)} leadership")
             run_log_rows.append(
                 _run_log_row(run_id, scraped_at, result, tier, len(postings))
@@ -195,6 +227,19 @@ def main() -> int:
     print(f"  Secondary: {len(secondary_postings)}")
     print()
 
+    # Drop function=Other rows from the Pending Review tab so sourcers
+    # don't have to scroll past Marketing/Comms/Legal/Art Director noise.
+    # The total count is still in the run summary above; the gap tells
+    # sourcers how many were skipped at a glance.
+    if SKIP_OTHER_FUNCTION:
+        before_filter = len(all_postings)
+        all_postings = [(p, s) for p, s in all_postings if p.function != "Other"]
+        skipped_other = before_filter - len(all_postings)
+        print(f"Skipped {skipped_other} rows with function=Other "
+              f"(SKIP_OTHER_FUNCTION=True). "
+              f"{len(all_postings)} rows will land in Pending Review.")
+        print()
+
     # Write Pending Review (full refresh — wipe + rewrite each run so
     # stale postings don't accumulate week-over-week).
     print(f"Writing to '{PENDING_REVIEW_TAB}'...")
@@ -202,7 +247,7 @@ def main() -> int:
         review_tab = sheets.get_or_create_worksheet(
             workbook, PENDING_REVIEW_TAB, PENDING_REVIEW_HEADERS
         )
-        review_rows = [_posting_to_row(p, scraped_at) for p in all_postings]
+        review_rows = [_posting_to_row(p, scraped_at, source) for p, source in all_postings]
         sheets.replace_data_rows(review_tab, PENDING_REVIEW_HEADERS, review_rows)
         print(f"  {len(review_rows)} rows written.")
     except Exception as exc:
