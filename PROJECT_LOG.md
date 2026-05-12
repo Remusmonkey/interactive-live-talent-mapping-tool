@@ -70,6 +70,48 @@ A Streamlit application for interactive talent mapping, organized into multiple 
 
 ---
 
+### Session 3 — May 12, 2026 (Tue PM)
+
+**Goal:** Pivot from AI-Week demo to two-sourcer working tool with real data. Lay the foundation for Phase 1.
+
+#### Context shift
+
+The project transitioned from a one-week demo to an ongoing working tool used by two leadership sourcers to present talent landscape data to hiring managers and the broader talent team. The audience is now real stakeholders, not a demo crowd, which changes what "good enough" means: synthetic data is no longer acceptable.
+
+#### Decisions
+
+| Decision | Choice | Why |
+|---|---|---|
+| Collaboration model | **Option A** — one code owner (Heather), both sourcers maintain data in a shared Google Sheet. Code stays in git as a safety net. | Two non-engineers can't sustainably both edit Python; clean role split matches how recruiting work actually flows. Data partner never touches GitHub. |
+| First problem area | **Section 1 (competitor postings)** | Most automatable section, highest stakeholder visibility, sets up the Sheets backend other sections will reuse. |
+| Data approach for Section 1 | **Scrapers first, no manual hand-curation baseline.** | "Time isn't an issue; we just want to get this tool right." No throw-away work; postings tab stays empty until scrapers ship. |
+| Scraper sequencing | **Three SaaS-based scrapers in order of tractability.** | Sequenced by how stable the source is, not by which competitor matters most. |
+
+#### Scope clarification
+
+"Greenhouse" appears in some scraper URLs because Greenhouse-the-company runs a SaaS that hosts public job boards for several of our Tier 1 competitors (Stripe, Brex, Ramp, Block). **This is not Affirm's internal Greenhouse ATS.** Same name, different system. The scraper reads from each competitor's own public-facing careers page — the exact same data anyone in the world can browse, hosted on Greenhouse infrastructure as a SaaS service. No internal Affirm data, no candidate PII, no ATS access.
+
+#### What landed in this session (foundation work)
+
+1. New `src/config.py` — centralized env loader for Google Sheets URLs + Notion credentials. Uses `python-dotenv` (already a dep).
+2. `.env.example` extended with `SHEET_POSTINGS_URL` and `SHEET_INDUSTRY_SIGNALS_URL` plus a step-by-step on how to get a published-CSV URL from Google Sheets.
+3. Section 1 (`src/sections/competitive_landscape.py`) refactored to read from Sheets if configured, fall back to local CSV/JSON otherwise. 5-minute `@st.cache_data` TTL so edits in the Sheet show up within 5 minutes without a manual reload. Source label ("Google Sheets" vs "Local CSV") rendered under each block so it's visible which source the app is using.
+4. README rewritten:
+   - New "How we collaborate" section explaining the code-owner / data-partner split
+   - "Refreshing data weekly" split into Path A (Google Sheets) and Path B (Local CSVs fallback)
+   - New "Setting up the Google Sheets backend" one-time setup section for the code owner
+
+#### What's next
+
+- **User action (data partner can help):** create the shared Google Sheet, share with both sourcers, publish the two tabs to CSV, paste the URLs into `.env`. Then the app starts reading live data even though the Sheet is empty (it'll just show no rows until the scraper populates it).
+- **Code owner action:** build the scraper for Stripe / Brex / Ramp / Block (the four competitors whose public boards run on Greenhouse infrastructure). This is Phase 1A in the plan.
+
+#### Plan reference
+
+Full plan with phasing, decisions, and todos lives in `.cursor/plans/real_data_phase_1_4347dee3.plan.md`.
+
+---
+
 ### Session 2 — May 7, 2026 (Thu AM)
 
 **Goal:** Sync to latest, see what changed overnight.
@@ -134,14 +176,21 @@ The `--prune` cleans up stale remote-tracking refs for branches that were delete
 | 2026-05-06 | Section 1 panel renamed "Trends and Insights" → "Industry Signals" | Better describes the panel; spec now allows non-Tier 1 fintech news, not just direct competitor coverage |
 | 2026-05-06 | Comp benchmark data uses synthetic test values, not real numbers | Compliance — repo only contains public-source / synthetic data |
 | 2026-05-07 | Workflow shifts from local cherry-picks to GitHub PRs | More review, better record, cleaner history |
+| 2026-05-12 | Collab model: code owner (Heather) + data partner; both edit data via Google Sheets, only code owner edits Python | Two non-engineers can't sustainably both edit Python; spreadsheets match how recruiters already work |
+| 2026-05-12 | First "real data" problem area is Section 1 (competitor postings) | Most automatable section + highest stakeholder visibility + sets up the Sheets backend other sections will reuse |
+| 2026-05-12 | Scrapers first, no manual hand-curation baseline | "Time isn't an issue; get the tool right" — no throw-away work |
 
 ---
 
 ## Open Questions / TODOs
 
-- [ ] Confirm whether `origin/heather` (new branch as of May 7) is leftover from PR #3 or in-flight work
-- [ ] Establish the formula combining the 2 difficulty inputs into low/medium/high (still TBD per `BUILD_SPEC.md`)
+- [x] Confirm whether `origin/heather` (new branch as of May 7) is leftover from PR #3 or in-flight work — *resolved Session 2: was in-flight; later merged via PR #4*
+- [x] Establish the formula combining the 2 difficulty inputs into low/medium/high — *resolved: tertile bucket sum, locked in BUILD_SPEC.md*
 - [ ] Decide whether contributor branches should be auto-deleted on PR merge (GitHub setting)
+- [ ] **Phase 1 open:** where does the app run for stakeholder access? (local + Notion publish vs Streamlit Community Cloud vs internal Affirm hosting)
+- [ ] **Phase 1 open:** function classification tiebreaker policy when a title maps to multiple functions (e.g. "VP of Product Engineering")
+- [ ] **Phase 1 open:** stale-posting rule — drop after 30 days? 60? When the company removes it?
+- [ ] **Phase 1 open:** Google Sheets service account setup (needed for the scraper to write back to the workbook)
 
 ---
 

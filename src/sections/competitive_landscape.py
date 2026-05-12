@@ -5,18 +5,63 @@ Vice President, and Senior Vice President roles plus a curated "Industry
 Signals" panel that mixes Tier 1 hiring trends with broader fintech industry
 news.
 
-Data sources:
-  - data/competitor_postings.csv  (columns: company, title, function, level, location, posted_date)
-  - data/insights.json            (list of {title, body})
+Data sources (in priority order):
+  1. Google Sheets — published-CSV URL configured in .env. Live data.
+  2. data/competitor_postings.csv + data/insights.json. Fallback when Sheets
+     is unconfigured or unreachable. May be stale.
+
+Source-selection is per-section and per-tab: if SHEET_POSTINGS_URL is set we
+fetch the postings tab from Sheets but still read insights from the local JSON
+unless SHEET_INDUSTRY_SIGNALS_URL is also set. Belt and suspenders.
 """
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Tuple
 
 import pandas as pd
 import streamlit as st
+
+from src.config import sheet_url_industry_signals, sheet_url_postings
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _load_postings(sheet_url: str | None, csv_path: str) -> Tuple[pd.DataFrame, str]:
+    """Return (postings dataframe, source label) for the data-source badge.
+
+    Tries Sheets first if a URL is configured; falls back to local CSV on any
+    exception (network failure, malformed CSV, etc.). The 5-minute cache means
+    edits in Google Sheets show up in the app within 5 minutes without manual
+    refresh, but we don't re-fetch on every interaction.
+    """
+    if sheet_url:
+        try:
+            df = pd.read_csv(sheet_url)
+            return df, "Google Sheets"
+        except Exception:
+            # Intentionally swallow and fall through — failure should degrade
+            # to local CSV, not crash the app for a stakeholder demo.
+            pass
+    df = pd.read_csv(csv_path)
+    return df, "Local CSV"
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _load_insights(sheet_url: str | None, json_path: str) -> Tuple[list[dict], str]:
+    """Return (insights list, source label). Sheets returns a dataframe; we
+    convert to the same shape as the local JSON so downstream code is uniform.
+    """
+    if sheet_url:
+        try:
+            df = pd.read_csv(sheet_url)
+            insights = df[["title", "body"]].dropna(subset=["title"]).to_dict("records")
+            return insights, "Google Sheets"
+        except Exception:
+            pass
+    with open(json_path) as f:
+        return json.load(f), "Local JSON"
 
 
 def render(data_dir: Path) -> None:
@@ -26,7 +71,10 @@ def render(data_dir: Path) -> None:
         "(Stripe, Block, Brex, Ramp, Wise, Adyen, Revolut)."
     )
 
-    postings = pd.read_csv(data_dir / "competitor_postings.csv")
+    postings, postings_source = _load_postings(
+        sheet_url_postings(),
+        str(data_dir / "competitor_postings.csv"),
+    )
     postings["posted_date"] = pd.to_datetime(postings["posted_date"]).dt.date
 
     companies = sorted(postings["company"].unique())
@@ -55,7 +103,10 @@ def render(data_dir: Path) -> None:
         },
     )
 
-    st.caption(f"Showing {len(filtered)} of {len(postings)} postings.")
+    st.caption(
+        f"Showing {len(filtered)} of {len(postings)} postings. "
+        f"Source: {postings_source}."
+    )
 
     st.divider()
 
@@ -64,9 +115,10 @@ def render(data_dir: Path) -> None:
         "Tier 1 hiring trends and broader fintech market signals relevant to leadership talent flows."
     )
 
-    insights_path = data_dir / "insights.json"
-    with insights_path.open() as f:
-        insights = json.load(f)
+    insights, insights_source = _load_insights(
+        sheet_url_industry_signals(),
+        str(data_dir / "insights.json"),
+    )
 
     cards_html = "".join(
         f"<div style='border-left:4px solid #4A4AF4;border-radius:6px;"
@@ -83,3 +135,4 @@ def render(data_dir: Path) -> None:
         f"gap:16px;margin-top:8px;'>{cards_html}</div>",
         unsafe_allow_html=True,
     )
+    st.caption(f"Source: {insights_source}.")

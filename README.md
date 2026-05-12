@@ -36,25 +36,58 @@ streamlit run app.py
 
 Streamlit opens the app in your browser at `http://localhost:8501`.
 
+## How we collaborate
+
+Two leadership sourcers maintain this tool: a **code owner** (handles app changes in Cursor) and a **data partner** (helps maintain the weekly data). Both contribute to data; only the code owner touches Python.
+
+| Lane | Who | Where the work happens | How often |
+|---|---|---|---|
+| **Data** — postings, signals, etc. | Both sourcers | Shared Google Sheet | Weekly |
+| **Code** — app behavior, fixes, polish | Code owner + AI in Cursor | This repo | As needed |
+
+The Google Sheet is the day-to-day surface for data. You don't need GitHub or Cursor to update data — you just edit cells in a shared workbook and the app picks up the changes within ~5 minutes.
+
 ## Refreshing data weekly (for non-engineers)
 
-All datasets live in `data/` as CSV or JSON files. To refresh:
+Two paths exist depending on whether the Google Sheets backend is set up yet:
+
+### Path A — Google Sheets (preferred, once configured)
+
+1. Open the shared workbook `Talent Mapping Tool — Live Data` in Google Sheets (link in team Slack).
+2. Edit the relevant tab:
+   - `Postings` — Section 1 competitor postings (one row per posting)
+   - `Industry Signals` — Section 1 news/signals panel (title + body)
+3. Save (auto-saves).
+4. Refresh the running app in your browser. New data appears within 5 minutes (caching window).
+
+No git, no command line. The app reads from the published Sheet URL on a 5-minute cache.
+
+### Path B — Local CSVs (fallback)
+
+If the Sheets backend hasn't been wired up yet, or if you're working offline:
 
 1. Open the relevant CSV (e.g., `data/competitor_postings.csv`) in Excel, Google Sheets, or any text editor.
 2. Replace or append rows. Keep the column headers exactly as they are.
 3. Save the file (Excel: "Save As" → CSV UTF-8).
-4. Commit and push:
+4. Refresh the running app — local edits are picked up immediately.
+5. (Code owner only) Commit + push the CSV when you want the change to outlive your local copy.
 
-   ```bash
-   git checkout -b chore/weekly-refresh-YYYY-MM-DD
-   git add data/
-   git commit -m "chore: weekly data refresh YYYY-MM-DD"
-   git push -u origin chore/weekly-refresh-YYYY-MM-DD
-   ```
+The app will automatically use the Sheet if `SHEET_POSTINGS_URL` and `SHEET_INDUSTRY_SIGNALS_URL` are configured in `.env`, and fall back to local files otherwise.
 
-5. Open a PR. Once merged, anyone running the app sees the updated data.
+See [BUILD_SPEC.md](./BUILD_SPEC.md) for the full data dictionary (which file/tab maps to which section).
 
-See [BUILD_SPEC.md](./BUILD_SPEC.md) for the full data dictionary (which file maps to which section).
+## Setting up the Google Sheets backend (one-time, code owner)
+
+This is a one-time setup that connects the app to a shared Google Sheet so the data partner can contribute without touching GitHub.
+
+1. **Create the workbook** in Google Sheets. Name it `Talent Mapping Tool — Live Data`.
+2. **Add two tabs to start:**
+   - `Postings` — columns: `company, title, function, level, location, posted_date, source_url` (the last one is optional but recommended)
+   - `Industry Signals` — columns: `title, body`
+3. **Share the workbook** with the data partner as an editor.
+4. **Publish each tab to CSV:** for each tab, `File → Share → Publish to web → [select tab] → Comma-separated values (.csv) → Publish`. Copy the URL it gives you.
+5. **Add the URLs to your local `.env` file** (see [.env.example](./.env.example) for the variable names and a step-by-step).
+6. **Restart the app.** It will start reading from the Sheet instead of the local CSVs.
 
 ## Adding a new role title to the dropdown
 
@@ -66,7 +99,7 @@ Role titles live in `src/sections/sourcing_engine.py` (constant `DROPDOWN_TITLES
 
 ## Project status
 
-**Day 1 — scaffold complete.** Sections render placeholder content. Real implementations land per the build sequence in [BUILD_SPEC.md](./BUILD_SPEC.md).
+**Phase 1 — real data rollout in progress.** All four sections render with placeholder/synthetic data today. Section 1 (Competitive Landscape) is the first to move to real data via the Google Sheets backend + a scraper pipeline (see `scripts/refresh_postings.py` once it lands). Sections 2-4 stay on synthetic CSVs until their own phases. See [PROJECT_LOG.md](./PROJECT_LOG.md) for the live working log.
 
 ## Documentation map
 
@@ -74,7 +107,8 @@ Role titles live in `src/sections/sourcing_engine.py` (constant `DROPDOWN_TITLES
 |---|---|
 | [README.md](./README.md) | How to run the app and refresh data (this file) |
 | [BUILD_SPEC.md](./BUILD_SPEC.md) | Locked scope, data schemas, build sequence, non-goals, code constraints |
-| [SETUP.md](./SETUP.md) | First-time team onboarding (GitHub auth, repo access, daily workflow) |
+| [PROJECT_LOG.md](./PROJECT_LOG.md) | Living working log — decisions, sessions, recurring issues, open TODOs |
+| [SETUP.md](./SETUP.md) | First-time code-owner onboarding (GitHub auth, repo access, daily workflow) |
 
 ## Contributing
 
